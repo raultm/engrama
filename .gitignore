@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+.claude/
+public/sql-wasm-browser.wasm
+public/sql-wasm-browser.js

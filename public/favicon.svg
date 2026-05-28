@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0f0f13"/>
+  <!-- Olvidada -->
+  <rect x="5" y="5" width="10" height="10" rx="2" fill="#ff5c5c"/>
+  <!-- Difícil -->
+  <rect x="17" y="5" width="10" height="10" rx="2" fill="#ff9c40"/>
+  <!-- Buena -->
+  <rect x="5" y="17" width="10" height="10" rx="2" fill="#40c8ff"/>
+  <!-- Perfecta -->
+  <rect x="17" y="17" width="10" height="10" rx="2" fill="#4cff91"/>
+</svg>

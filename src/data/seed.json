@@ -1,0 +1,382 @@
+{
+  "collections": [
+    {
+      "id": "col-go",
+      "name": "El juego del Go",
+      "description": "Reglas, estrategia y terminología del Go (Weiqi / Baduk)",
+      "schedulerType": "sm2",
+      "flashCards": [
+        {
+          "id": "go-001",
+          "frontText": "¿Cuál es el objetivo del Go?",
+          "backText": "Controlar más territorio que el oponente al final de la partida. El territorio son las intersecciones vacías completamente rodeadas por tus piedras.",
+          "eloDifficulty": 1300,
+          "tags": ["reglas", "básico"]
+        },
+        {
+          "id": "go-002",
+          "frontText": "¿Qué es una libertad (respiradero) en Go?",
+          "backText": "Una intersección vacía adyacente (horizontal o verticalmente) a una piedra o grupo. Sin libertades, el grupo es capturado y retirado del tablero.",
+          "eloDifficulty": 1300,
+          "tags": ["reglas", "básico"]
+        },
+        {
+          "id": "go-003",
+          "frontText": "¿Cuándo se captura un grupo de piedras?",
+          "backText": "Cuando todas sus libertades son ocupadas por piedras del oponente en un mismo movimiento. Las piedras capturadas se retiran del tablero y cuentan como puntos.",
+          "eloDifficulty": 1300,
+          "tags": ["reglas", "básico"]
+        },
+        {
+          "id": "go-004",
+          "frontText": "¿Qué es Atari?",
+          "backText": "Estado en que un grupo tiene solo una libertad restante. El oponente puede capturarlo en el siguiente movimiento si no se defiende o escapa.",
+          "eloDifficulty": 1350,
+          "tags": ["reglas", "básico", "terminología"]
+        },
+        {
+          "id": "go-005",
+          "frontText": "¿Qué es el Ko?",
+          "backText": "Situación en la que capturar una piedra recrearía la posición del turno anterior. La regla Ko prohíbe repetir posiciones: debes jugar en otro lado primero.",
+          "eloDifficulty": 1500,
+          "tags": ["reglas", "terminología"]
+        },
+        {
+          "id": "go-006",
+          "frontText": "¿Qué es el Komi?",
+          "backText": "Puntos de compensación dados a las blancas por jugar segundo. Normalmente 6.5 o 7.5 puntos. El 0.5 evita empates. Equilibra la ventaja del primer movimiento.",
+          "eloDifficulty": 1350,
+          "tags": ["reglas", "básico"]
+        },
+        {
+          "id": "go-007",
+          "frontText": "¿Cómo se puntúa el territorio en el sistema japonés?",
+          "backText": "Se cuentan las intersecciones vacías rodeadas únicamente por piedras propias, más el número de piedras capturadas al oponente durante la partida.",
+          "eloDifficulty": 1400,
+          "tags": ["reglas", "puntuación"]
+        },
+        {
+          "id": "go-008",
+          "frontText": "¿Cuándo termina una partida de Go?",
+          "backText": "Cuando ambos jugadores pasan consecutivamente, indicando que no hay más movimientos rentables. Luego se identifican los grupos muertos y se cuentan los territorios.",
+          "eloDifficulty": 1350,
+          "tags": ["reglas", "básico"]
+        },
+        {
+          "id": "go-009",
+          "frontText": "¿Qué es una piedra muerta?",
+          "backText": "Piedra que no puede sobrevivir aunque su dueño la intente defender. Ambos jugadores deben ponerse de acuerdo; si no, se juega hasta demostrarlo.",
+          "eloDifficulty": 1450,
+          "tags": ["reglas", "vida y muerte"]
+        },
+        {
+          "id": "go-010",
+          "frontText": "¿Qué significa que un grupo 'vive' en Go?",
+          "backText": "Un grupo está vivo cuando tiene o puede formar dos ojos verdaderos independientes, o cuando está en Seki, haciendo imposible su captura.",
+          "eloDifficulty": 1400,
+          "tags": ["reglas", "vida y muerte"]
+        },
+        {
+          "id": "go-011",
+          "frontText": "¿Qué es un ojo en Go?",
+          "backText": "Intersección vacía completamente rodeada por piedras del mismo color. Un grupo con dos ojos verdaderos no puede ser capturado porque el oponente haría suicidio al jugar dentro.",
+          "eloDifficulty": 1400,
+          "tags": ["vida y muerte", "básico"]
+        },
+        {
+          "id": "go-012",
+          "frontText": "¿Por qué dos ojos garantizan la vida de un grupo?",
+          "backText": "Para capturar el grupo el oponente necesitaría jugar en ambos ojos simultáneamente, lo cual es imposible. Al jugar en un ojo haría suicidio (movimiento ilegal).",
+          "eloDifficulty": 1450,
+          "tags": ["vida y muerte"]
+        },
+        {
+          "id": "go-013",
+          "frontText": "¿Qué es un ojo falso?",
+          "backText": "Intersección que parece un ojo pero puede ser destruida. Ocurre cuando la piedra diagonal que completa el ojo puede ser capturada, creando un Atari al propio grupo.",
+          "eloDifficulty": 1600,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "intermedio"]
+        },
+        {
+          "id": "go-014",
+          "frontText": "¿Qué es Nakade?",
+          "backText": "Movimiento que se juega en el punto vital del espacio interior de un grupo enemigo, impidiendo que forme dos ojos. El punto vital depende de la forma (4 en línea → segundo punto, triangular → centro, etc.).",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "tesuji"]
+        },
+        {
+          "id": "go-015",
+          "frontText": "¿Qué es un Snapback (trampa de recaptura)?",
+          "backText": "Tesuji donde permites que el oponente capture una piedra tuya, para luego recapturar un grupo mayor. El oponente 'gana' una piedra pero pierde el grupo entero.",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "tesuji"]
+        },
+        {
+          "id": "go-016",
+          "frontText": "¿Qué es una escalera (Shicho)?",
+          "backText": "Secuencia de Atari en zigzag donde una piedra intenta escapar pero es capturada si no hay una piedra propia en el camino. Si hay una piedra aliada en el camino de la escalera, la escalera no funciona.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["táctica", "vida y muerte"]
+        },
+        {
+          "id": "go-017",
+          "frontText": "¿Qué es una red (Geta)?",
+          "backText": "Movimiento que rodea a una piedra o grupo enemigo cortando todas sus rutas de escape, sin necesidad de seguirla en escalera. La pieza queda atrapada aunque tenga libertades.",
+          "eloDifficulty": 1600,
+          "isUnlocked": false,
+          "tags": ["táctica", "vida y muerte"]
+        },
+        {
+          "id": "go-018",
+          "frontText": "¿Qué es Seki?",
+          "backText": "Situación de paz forzada donde dos grupos contrarios comparten libertades y ninguno puede atacar al otro sin reducir sus propias libertades y morir. Ambos sobreviven sin contar territorio.",
+          "eloDifficulty": 1700,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "avanzado"]
+        },
+        {
+          "id": "go-019",
+          "frontText": "¿Qué es el 'Bent Four in the Corner'?",
+          "backText": "Forma de cuatro piedras dobladas en la esquina que es incondicionalmente muerta, incluso si tiene dos espacios aparentes. El Ko que surgiría al defenderla siempre puede ser ganado por el atacante.",
+          "eloDifficulty": 1800,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "avanzado"]
+        },
+        {
+          "id": "go-020",
+          "frontText": "¿Qué es el 'punto vital' de una forma?",
+          "backText": "La intersección donde, si el oponente juega, destruye la posibilidad de que el grupo forme dos ojos. Jugar ahí mata el grupo desde dentro. Cada forma (triangular, en línea, etc.) tiene su propio punto vital.",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["vida y muerte", "intermedio"]
+        },
+        {
+          "id": "go-021",
+          "frontText": "¿Qué es el Fuseki?",
+          "backText": "La fase de apertura del Go. Los jugadores colocan piedras en puntos estratégicos del tablero para reclamar esquinas, lados y establecer influencia antes de que empiecen las peleas.",
+          "eloDifficulty": 1400,
+          "tags": ["apertura", "terminología"]
+        },
+        {
+          "id": "go-022",
+          "frontText": "¿Por qué las esquinas son más valiosas al inicio de la partida?",
+          "backText": "Porque requieren menos piedras para rodear territorio. Una esquina se puede asegurar con ~3 piedras, un lado necesita ~4, y el centro necesita ~8. Las esquinas son el terreno más eficiente.",
+          "eloDifficulty": 1400,
+          "tags": ["apertura", "estrategia"]
+        },
+        {
+          "id": "go-023",
+          "frontText": "¿Qué es el Hoshi (punto estrella) en 4-4?",
+          "backText": "La intersección marcada 4-4 desde la esquina. Prioriza influencia hacia el centro sobre asegurar territorio inmediato en la esquina. Es un punto agresivo y orientado al centro.",
+          "eloDifficulty": 1450,
+          "tags": ["apertura", "terminología"]
+        },
+        {
+          "id": "go-024",
+          "frontText": "¿Qué es el Komoku (punto 3-4)?",
+          "backText": "Apertura en la intersección 3-4 desde la esquina. Equilibra territorio local con algo de influencia lateral. Históricamente la apertura más común en el Go profesional japonés.",
+          "eloDifficulty": 1450,
+          "tags": ["apertura", "terminología"]
+        },
+        {
+          "id": "go-025",
+          "frontText": "¿Qué es el Sanrensei?",
+          "backText": "Apertura donde un jugador ocupa los tres Hoshi de un lado del tablero. Estrategia orientada a crear un Moyo masivo en el centro. Fue popularizada por Takemiya Masaki.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["apertura", "estrategia"]
+        },
+        {
+          "id": "go-026",
+          "frontText": "¿Qué es el Shimari?",
+          "backText": "Dos piedras propias en la misma esquina que la aseguran eficientemente antes de que el oponente pueda aproximarse. Ejemplo: Hoshi (4-4) + piedra en 6-3 o 3-6.",
+          "eloDifficulty": 1500,
+          "tags": ["apertura", "terminología"]
+        },
+        {
+          "id": "go-027",
+          "frontText": "¿Qué es un Kakari?",
+          "backText": "Movimiento de aproximación a la esquina del oponente para evitar que forme un Shimari sólido o para presionar su posición. Inicia la negociación sobre el territorio de esa esquina.",
+          "eloDifficulty": 1500,
+          "tags": ["apertura", "terminología"]
+        },
+        {
+          "id": "go-028",
+          "frontText": "¿Qué es la invasión 3-3 bajo una piedra Hoshi?",
+          "backText": "Movimiento agresivo que invade directamente la esquina yendo al punto 3-3 bajo la piedra 4-4 del oponente. El invasor vive en la esquina pero cede toda la influencia exterior al defensor.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["apertura", "táctica"]
+        },
+        {
+          "id": "go-029",
+          "frontText": "¿Qué es Aji en Go?",
+          "backText": "Potencial latente en una posición. Piedras o grupos que parecen inofensivos pero guardan amenazas futuras que el oponente debe considerar. El Aji puede explotarse más adelante.",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["estrategia", "intermedio"]
+        },
+        {
+          "id": "go-030",
+          "frontText": "¿Qué es Tenuki?",
+          "backText": "Ignorar la jugada local del oponente para jugar en otro lugar del tablero. Eficaz cuando hay un punto más grande disponible. Requiere calcular que ignorar no causa pérdidas inmediatas.",
+          "eloDifficulty": 1500,
+          "tags": ["estrategia", "terminología"]
+        },
+        {
+          "id": "go-031",
+          "frontText": "¿Qué es Influence (Influencia) en Go?",
+          "backText": "Control sobre el espacio central del tablero generado por piedras altas y sólidas. La influencia no es territorio seguro todavía, pero puede convertirse en él o usarse para atacar grupos del oponente.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["estrategia", "conceptos"]
+        },
+        {
+          "id": "go-032",
+          "frontText": "¿Qué diferencia hay entre Moyo y Territorio en Go?",
+          "backText": "El Moyo es territorio potencial: área que podrías llegar a rodear pero que aún puede ser invadida o reducida. El Territorio es espacio ya asegurado que el oponente no puede arrebatarte.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["estrategia", "conceptos"]
+        },
+        {
+          "id": "go-033",
+          "frontText": "¿Qué es Kikashi en Go?",
+          "backText": "Movimiento que fuerza una respuesta del oponente y de paso mejora tu posición en otro lugar. El oponente debe responder, pero la ganancia principal de Kikashi es secundaria, no en el punto jugado.",
+          "eloDifficulty": 1700,
+          "isUnlocked": false,
+          "tags": ["estrategia", "avanzado"]
+        },
+        {
+          "id": "go-034",
+          "frontText": "¿Qué es Sabaki en Go?",
+          "backText": "Técnica de manejar piedras de forma ligera y eficiente en territorio o zona de influencia enemiga. Se crean conexiones flexibles o se sacrifican piedras para obtener forma y no quedar atrapado.",
+          "eloDifficulty": 1700,
+          "isUnlocked": false,
+          "tags": ["estrategia", "avanzado"]
+        },
+        {
+          "id": "go-035",
+          "frontText": "¿Qué es Thickness (Solidez o Grosor) en Go?",
+          "backText": "Un grupo de piedras sólido, sin debilidades, que irradia influencia poderosa al exterior. La solidez no encierra territorio directamente, pero hace que el oponente no pueda vivir cerca de ella.",
+          "eloDifficulty": 1600,
+          "isUnlocked": false,
+          "tags": ["estrategia", "conceptos"]
+        },
+        {
+          "id": "go-036",
+          "frontText": "¿Qué es un Hane en Go?",
+          "backText": "Movimiento diagonal que rodea por fuera una piedra del oponente. Muy común para avanzar a lo largo del borde del tablero, separar grupos o crear cortes en la posición enemiga.",
+          "eloDifficulty": 1500,
+          "tags": ["táctica", "terminología"]
+        },
+        {
+          "id": "go-037",
+          "frontText": "¿Qué es una amenaza de Ko (Ko threat)?",
+          "backText": "Movimiento fuera del Ko que obliga al oponente a responder antes de poder reconectar en él. Quien tenga más amenazas de Ko y mayor valor en ellas controla el Ko y tiene ventaja.",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["táctica", "intermedio"]
+        },
+        {
+          "id": "go-038",
+          "frontText": "¿Qué es Miai en Go?",
+          "backText": "Dos puntos de igual importancia estratégica donde, si el oponente juega en uno, tú juegas en el otro y la situación queda equilibrada. Permite planificar con confianza sin calcular exactamente.",
+          "eloDifficulty": 1650,
+          "isUnlocked": false,
+          "tags": ["estrategia", "conceptos"]
+        },
+        {
+          "id": "go-039",
+          "frontText": "¿Qué significa Sente y Gote en Go?",
+          "backText": "Sente: movimiento que obliga al oponente a responder, manteniendo la iniciativa para jugar donde quieras. Gote: movimiento al que el oponente no necesita responder; él retoma la iniciativa.",
+          "eloDifficulty": 1500,
+          "tags": ["estrategia", "terminología"]
+        },
+        {
+          "id": "go-040",
+          "frontText": "¿Qué es el principio de 'no construir muros hacia tu propio territorio'?",
+          "backText": "Las piedras altas que generan influencia pierden su valor si hay mucho territorio propio detrás. La influencia debe apuntar hacia el centro o hacia grupos enemigos, no hacia espacio ya asegurado.",
+          "eloDifficulty": 1600,
+          "isUnlocked": false,
+          "tags": ["estrategia", "principios"]
+        },
+        {
+          "id": "go-041",
+          "frontText": "¿Cómo funciona el sistema de rangos Kyu/Dan en Go?",
+          "backText": "Va de 30 Kyu (principiante absoluto) bajando hasta 1 Kyu, luego sube de 1 Dan hasta 9 Dan profesional. Cada rango representa aproximadamente 1 piedra de handicap de diferencia.",
+          "eloDifficulty": 1350,
+          "tags": ["sistema", "básico"]
+        },
+        {
+          "id": "go-042",
+          "frontText": "¿Qué significa Shodan en Go?",
+          "backText": "Primer Dan (1 Dan). Equivale al nivel de 'maestro amateur'. Se considera el umbral de dominio del juego. Alcanzarlo puede llevar desde meses hasta años según la dedicación.",
+          "eloDifficulty": 1350,
+          "tags": ["sistema", "terminología"]
+        },
+        {
+          "id": "go-043",
+          "frontText": "¿Cómo funciona el handicap en Go?",
+          "backText": "El jugador más débil coloca piedras extra al inicio en los puntos estrella del tablero. Cada piedra de handicap equivale a ~1 rango de diferencia. Las negras no tienen Komi en partidas de handicap.",
+          "eloDifficulty": 1400,
+          "tags": ["sistema", "reglas"]
+        },
+        {
+          "id": "go-044",
+          "frontText": "¿Qué diferencia hay entre puntuación por área (china) y por territorio (japonesa)?",
+          "backText": "China: se cuentan todas las intersecciones ocupadas o rodeadas por tus piedras. Japonesa: solo intersecciones vacías rodeadas + capturas. El resultado suele ser equivalente salvo en casos con Seki o Ko.",
+          "eloDifficulty": 1500,
+          "tags": ["reglas", "puntuación"]
+        },
+        {
+          "id": "go-045",
+          "frontText": "¿Qué es un Joseki?",
+          "backText": "Secuencia de movimientos localmente óptima y acordada, generalmente en las esquinas, que resulta en igualdad para ambos jugadores. Son 'variantes estándar' que conviene conocer pero no memorizar ciegamente.",
+          "eloDifficulty": 1500,
+          "tags": ["terminología", "apertura"]
+        },
+        {
+          "id": "go-046",
+          "frontText": "¿Qué es un Tesuji?",
+          "backText": "Movimiento táctico brillante y eficiente que resuelve un problema local de forma no obvia: capturar, conectar, vivir, o escapar. Puede incluir sacrificios, formas especiales o secuencias de Atari.",
+          "eloDifficulty": 1550,
+          "isUnlocked": false,
+          "tags": ["táctica", "terminología"]
+        },
+        {
+          "id": "go-047",
+          "frontText": "¿Cuál es el tamaño estándar del tablero de Go y los alternativos?",
+          "backText": "El estándar es 19×19 (361 puntos). También se usa 9×9 para principiantes y partidas rápidas, y 13×13 para nivel intermedio. Históricamente existieron variantes de 17×17 y otros tamaños.",
+          "eloDifficulty": 1300,
+          "tags": ["básico", "sistema"]
+        },
+        {
+          "id": "go-048",
+          "frontText": "¿Qué es el Tengen?",
+          "backText": "El punto central del tablero (intersección 10-10 en 19×19). Rara vez se juega en la apertura porque es mucho menos eficiente que las esquinas. Tiene valor simbólico y se usa en algunos estudios de vida y muerte.",
+          "eloDifficulty": 1400,
+          "tags": ["terminología", "apertura"]
+        },
+        {
+          "id": "go-049",
+          "frontText": "¿Qué es Dame en el contexto del final de partida?",
+          "backText": "Intersecciones neutras que no pertenecen al territorio de ningún jugador y no tienen valor de puntos. En el sistema japonés se rellenan al final por turnos sin afectar la puntuación.",
+          "eloDifficulty": 1450,
+          "tags": ["terminología", "puntuación"]
+        },
+        {
+          "id": "go-050",
+          "frontText": "¿Quién fue Go Seigen y por qué es considerado el mejor jugador del siglo XX?",
+          "backText": "Go Seigen (Wu Qingyuan, 1914-2014) dominó el Go japonés durante décadas, ganando a todos los mejores jugadores en series de 10 partidas (Jubango). Revolucionó la apertura moderna con el 'New Fuseki' junto a Kitani Minoru.",
+          "eloDifficulty": 1500,
+          "tags": ["historia", "cultura"]
+        }
+      ]
+    }
+  ]
+}
