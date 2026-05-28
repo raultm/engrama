@@ -703,6 +703,7 @@ kbd {
   padding: 16px 24px max(28px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
   background: var(--color-bg);
+  position: relative;
 }
 
 /* Wrapper that constrains both reveal button and rating grid to the same width */
@@ -801,9 +802,14 @@ kbd {
 
 /* ===== ELO DIFF ===== */
 .elo-diff {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 20px;
   font-weight: 700;
-  min-height: 28px;
+  white-space: nowrap;
+  pointer-events: none;
   transition: opacity 300ms;
 }
 

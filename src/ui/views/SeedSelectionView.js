@@ -102,20 +102,29 @@ export function SeedSelectionView(rootEl, seedRegistry) {
     if (!btn || btn.disabled) return
 
     btn.disabled = true
-    btn.querySelector('.seed-option__badge').textContent = '…'
+    const badge = btn.querySelector('.seed-option__badge')
+    badge.textContent = '…'
 
     const entry = seedRegistry.find(s => s.id === btn.dataset.id)
 
-    if (installedIds.has(entry.id)) {
+    try {
+      const container = await initContainer(entry.id)
+
+      if (installedIds.has(entry.id) && container.db.isSeeded()) {
+        setActiveId(entry.id)
+        location.reload()
+        return
+      }
+
+      await container.seedService.seedFromRegistry(entry)
+      registerEngrama(entry.id, entry.name)
       setActiveId(entry.id)
       location.reload()
-      return
+    } catch (err) {
+      console.error('Error al instalar el mazo:', err)
+      btn.disabled = false
+      badge.textContent = '→'
+      alert(`Error al instalar "${entry?.name}": ${err.message}`)
     }
-
-    const container = await initContainer(entry.id)
-    await container.seedService.seedFromRegistry(entry)
-    registerEngrama(entry.id, entry.name)
-    setActiveId(entry.id)
-    location.reload()
   })
 }
