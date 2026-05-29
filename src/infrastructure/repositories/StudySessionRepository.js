@@ -58,6 +58,16 @@ export class StudySessionRepository {
     )
   }
 
+  findCompleted(limit = 40) {
+    return this._db.queryAll(
+      `SELECT * FROM study_sessions
+       WHERE status IN ('completed', 'abandoned')
+       ORDER BY started_at ASC
+       LIMIT ?`,
+      [limit]
+    )
+  }
+
   findAll() {
     return this._db.queryAll(`SELECT * FROM study_sessions ORDER BY started_at DESC`)
   }

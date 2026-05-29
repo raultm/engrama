@@ -5,9 +5,10 @@ import { getRank } from './HomeView.js'
 import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engramaRegistry.js'
 
 export function StatsView(rootEl) {
-  const { studySessionService, userProfileRepository } = getContainer()
+  const { studySessionService, userProfileRepository, studySessionRepository } = getContainer()
   const profile = userProfileRepository.getOrCreate()
   const stats = studySessionService.getAllCardsStats()
+  const sessions = studySessionRepository.findCompleted()
 
   const level = profile.getLevel()
   const levelPct = Math.round(profile.getLevelProgress() * 100)
@@ -95,6 +96,12 @@ export function StatsView(rootEl) {
           <p>${levelPct}% hacia nivel ${level + 1}</p>
         </div>
 
+        <div class="session-history">
+          <h2>Historial de sesiones</h2>
+          ${_renderEloChart(sessions)}
+          ${_renderSessionList(sessions)}
+        </div>
+
         <div class="danger-zone">
           <button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>
           <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
@@ -167,6 +174,7 @@ export function StatsView(rootEl) {
   })
 
   rootEl.querySelector('#btn-reset').addEventListener('click', async () => {
+
     const ok = await showConfirm({
       title: '¿Borrar todos los datos?',
       message: 'Se eliminarán todas las tarjetas, progreso, ELO y sesiones. Esta acción no se puede deshacer.',
@@ -179,4 +187,119 @@ export function StatsView(rootEl) {
     db.reset()
     location.reload()
   })
+}
+
+// ── Gráfico ELO ──────────────────────────────────────────────────────────────
+
+function _renderEloChart(sessions) {
+  const valid = sessions.filter(s => JSON.parse(s.summary || '{}').eloEnd != null)
+  if (valid.length < 2) {
+    return `<p class="sessions-empty">Completa al menos 2 sesiones para ver la evolución del ELO.</p>`
+  }
+
+  const values = valid.map(s => JSON.parse(s.summary).eloEnd)
+  const W = 400, H = 80
+  const pL = 38, pR = 8, pT = 10, pB = 10
+  const cW = W - pL - pR
+  const cH = H - pT - pB
+
+  const lo = Math.min(...values) - 30
+  const hi = Math.max(...values) + 30
+  const range = hi - lo
+
+  const toX = i => pL + (i / (values.length - 1)) * cW
+  const toY = v => pT + (1 - (v - lo) / range) * cH
+
+  const pts = values.map((v, i) => ({ x: toX(i), y: toY(v), v }))
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const areaPath = `${linePath} L${pts.at(-1).x.toFixed(1)},${(pT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pT + cH).toFixed(1)} Z`
+
+  const yTicks = [lo + 30, Math.round((lo + 30 + hi - 30) / 2), hi - 30]
+
+  return `
+    <svg class="elo-chart" viewBox="0 0 ${W} ${H}" aria-label="Evolución del ELO">
+      <defs>
+        <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--color-primary)" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      ${yTicks.map(v => `
+        <line x1="${pL}" y1="${toY(v).toFixed(1)}" x2="${W - pR}" y2="${toY(v).toFixed(1)}" class="chart-grid"/>
+        <text x="${pL - 4}" y="${(toY(v) + 3.5).toFixed(1)}" class="chart-label" text-anchor="end">${v}</text>
+      `).join('')}
+
+      <path d="${areaPath}" fill="url(#eloGrad)"/>
+      <path d="${linePath}" fill="none" stroke="var(--color-primary)" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+      ${pts.map(p => `
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}"
+          r="${pts.length > 20 ? 1.8 : 3}"
+          fill="var(--color-primary)" stroke="var(--color-surface)" stroke-width="1.5"/>
+      `).join('')}
+    </svg>
+  `
+}
+
+// ── Lista de sesiones ─────────────────────────────────────────────────────────
+
+function _renderSessionList(sessions) {
+  if (sessions.length === 0) return ''
+  return `
+    <div class="session-list">
+      ${[...sessions].reverse().slice(0, 15).map(_sessionRow).join('')}
+    </div>
+  `
+}
+
+function _sessionRow(row) {
+  const s = JSON.parse(row.summary || '{}')
+  const delta = (s.eloEnd ?? s.eloStart ?? 1500) - (s.eloStart ?? 1500)
+  const started = new Date(row.started_at)
+  const secs = row.completed_at
+    ? Math.round((new Date(row.completed_at) - started) / 1000)
+    : 0
+  const abandoned = row.status === 'abandoned'
+
+  return `
+    <div class="session-row ${abandoned ? 'session-row--abandoned' : ''}">
+      <div class="session-row__date">${_relativeDate(started)}</div>
+      <div class="session-row__meta">
+        <span>${s.totalCards ?? 0} tarjetas</span>
+        <span>${_formatDuration(secs)}</span>
+        ${abandoned ? '<span class="session-row__tag">abandonada</span>' : ''}
+      </div>
+      <div class="session-row__ratings">
+        ${_pill(s.perfect,  'perfect',   'P')}
+        ${_pill(s.good,     'good',      'B')}
+        ${_pill(s.hard,     'hard',      'D')}
+        ${_pill(s.forgotten,'forgotten', 'O')}
+      </div>
+      <div class="session-row__delta ${delta >= 0 ? 'elo-up' : 'elo-down'}">
+        ${delta >= 0 ? '+' : ''}${delta}
+      </div>
+    </div>
+  `
+}
+
+function _pill(count, type, label) {
+  if (!count) return ''
+  return `<span class="s-pill s-pill--${type}" title="${label}: ${count}">${count}</span>`
+}
+
+function _formatDuration(secs) {
+  if (secs < 60) return `${secs}s`
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
+}
+
+function _relativeDate(date) {
+  const days = Math.floor((Date.now() - date) / 86400000)
+  if (days === 0) return 'Hoy'
+  if (days === 1) return 'Ayer'
+  if (days < 7)  return `Hace ${days} días`
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }
