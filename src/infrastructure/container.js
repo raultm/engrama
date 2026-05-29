@@ -2,6 +2,7 @@ import { DatabaseAdapter } from './db/DatabaseAdapter.js'
 import { CollectionRepository } from './repositories/CollectionRepository.js'
 import { FlashCardRepository } from './repositories/FlashCardRepository.js'
 import { UserProfileRepository } from './repositories/UserProfileRepository.js'
+import { StudySessionRepository } from './repositories/StudySessionRepository.js'
 import { CollectionService } from '../application/services/CollectionService.js'
 import { FlashCardService } from '../application/services/FlashCardService.js'
 import { StudySessionService } from '../application/services/StudySessionService.js'
@@ -16,6 +17,7 @@ export async function initContainer(engramaId = 'default') {
   const collectionRepository = new CollectionRepository(db)
   const flashCardRepository = new FlashCardRepository(db)
   const userProfileRepository = new UserProfileRepository(db)
+  const studySessionRepository = new StudySessionRepository(db)
 
   const collectionService = new CollectionService({ collectionRepository })
   const flashCardService = new FlashCardService({ flashCardRepository })
@@ -23,6 +25,7 @@ export async function initContainer(engramaId = 'default') {
     collectionRepository,
     flashCardRepository,
     userProfileRepository,
+    studySessionRepository,
   })
   const seedService = new SeedService({
     db,
@@ -36,6 +39,7 @@ export async function initContainer(engramaId = 'default') {
     collectionRepository,
     flashCardRepository,
     userProfileRepository,
+    studySessionRepository,
     collectionService,
     flashCardService,
     studySessionService,

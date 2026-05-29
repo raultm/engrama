@@ -31,7 +31,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
           <div class="study-progress__bar">
             <div class="study-progress__fill" id="progress-fill" style="width:${Math.round(session.progress * 100)}%"></div>
           </div>
-          <span class="study-progress__text" id="progress-text">${session.currentIndex + 1} / ${session.cards.length}</span>
+          <span class="study-progress__text" id="progress-text">${session.masteredCount} / ${session.cards.length}</span>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
     </div>
   `
 
-  // Element refs — captured once
+  // Element refs
   const flashcard     = rootEl.querySelector('#flashcard')
   const frontContent  = rootEl.querySelector('#front-content')
   const frontTags     = rootEl.querySelector('#front-tags')
@@ -74,6 +74,16 @@ function _renderShell(rootEl, initialSession, studySessionService) {
   const eloDiff       = rootEl.querySelector('#elo-diff')
   const progressFill  = rootEl.querySelector('#progress-fill')
   const progressText  = rootEl.querySelector('#progress-text')
+
+  function cleanup() {
+    window.removeEventListener('beforeunload', onUnload)
+    controller.abort()
+  }
+
+  function onUnload() {
+    if (!session.isFinished) studySessionService.markAbandoned(session.id)
+  }
+  window.addEventListener('beforeunload', onUnload)
 
   function fillCard(c) {
     frontContent.textContent = c.frontText
@@ -94,7 +104,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
 
   function updateProgress() {
     progressFill.style.width = `${Math.round(session.progress * 100)}%`
-    progressText.textContent = `${session.currentIndex + 1} / ${session.cards.length}`
+    progressText.textContent = `${session.masteredCount} / ${session.cards.length}`
   }
 
   function transitionToNext() {
@@ -116,20 +126,22 @@ function _renderShell(rootEl, initialSession, studySessionService) {
     ratingButtons.querySelector('.rating-btn').focus()
   }
 
-  // Initial fill
   fillCard(card)
   updateProgress()
 
-  // Listeners
   rootEl.querySelector('#btn-exit').addEventListener('click', async () => {
     const ok = await showConfirm({
       title: '¿Salir de la sesión?',
-      message: 'Perderás el progreso de las tarjetas no respondidas.',
+      message: 'El progreso de esta sesión se guardará.',
       confirmLabel: 'Salir',
       cancelLabel: 'Continuar',
-      dangerous: true,
+      dangerous: false,
     })
-    if (ok) navigate('/')
+    if (ok) {
+      studySessionService.markAbandoned(session.id)
+      cleanup()
+      navigate('/')
+    }
   })
 
   btnReveal.addEventListener('click', reveal)
@@ -145,6 +157,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
     eloDiff.className = `elo-diff ${userDelta >= 0 ? 'elo-diff--up' : 'elo-diff--down'}`
 
     if (next.isFinished) {
+      cleanup()
       setTimeout(() => _renderSummary(rootEl, next), 400)
     } else {
       setTimeout(() => transitionToNext(), 350)
@@ -165,6 +178,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
 
 function _renderSummary(rootEl, session) {
   const s = session.getSummary()
+  const repeated = s.answered - s.total
   rootEl.innerHTML = `
     <div class="view summary-view">
       <main class="summary-main">
@@ -189,6 +203,7 @@ function _renderSummary(rootEl, session) {
               <span class="summary-stat__label">Olvidadas</span>
             </div>
           </div>
+          ${repeated > 0 ? `<p class="summary-repeated">${repeated} tarjeta${repeated > 1 ? 's' : ''} repetida${repeated > 1 ? 's' : ''} hasta aprenderla${repeated > 1 ? 's' : ''}</p>` : ''}
           <div class="summary-elo">
             <span class="${s.totalEloChange >= 0 ? 'elo-up' : 'elo-down'}">
               ${s.totalEloChange >= 0 ? '+' : ''}${s.totalEloChange} ELO

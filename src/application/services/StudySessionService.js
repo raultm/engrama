@@ -4,10 +4,11 @@ import { eloSystem } from '../../domain/elo/EloSystem.js'
 import { generateId } from '../../infrastructure/utils/generateId.js'
 
 export class StudySessionService {
-  constructor({ collectionRepository, flashCardRepository, userProfileRepository }) {
+  constructor({ collectionRepository, flashCardRepository, userProfileRepository, studySessionRepository }) {
     this._collectionRepo = collectionRepository
     this._cardRepo = flashCardRepository
     this._profileRepo = userProfileRepository
+    this._sessionRepo = studySessionRepository
   }
 
   startGlobalSession() {
@@ -18,12 +19,17 @@ export class StudySessionService {
 
     if (cards.length === 0) return null
 
-    return new StudySession({
+    const profile = this._profileRepo.getOrCreate()
+    const session = new StudySession({
       id: generateId(),
       collectionId: 'global',
       schedulerType: 'sm2',
       cards,
+      eloStart: profile.eloRating,
     })
+
+    this._sessionRepo.save(session, null)
+    return session
   }
 
   getAllCardsStats() {
@@ -32,7 +38,6 @@ export class StudySessionService {
     const unlocked = allCards.filter(c => c.isUnlocked)
     const locked = allCards.filter(c => !c.isUnlocked)
 
-    // Group locked cards by ELO milestone
     const lockedByElo = locked.reduce((acc, c) => {
       acc[c.eloDifficulty] = (acc[c.eloDifficulty] ?? 0) + 1
       return acc
@@ -60,37 +65,31 @@ export class StudySessionService {
     const scheduler = schedulerRegistry.get(session.schedulerType)
     const profile = this._profileRepo.getOrCreate()
 
-    // Scheduler update
     const { schedulerData } = scheduler.processAnswer(card, rating)
-
-    // ELO update
     const { userDelta, cardDelta, newUserElo, newCardElo } =
       eloSystem.calculateChange(profile.eloRating, card.eloDifficulty, rating)
 
-    const updatedCard = card
-      .withSchedulerData(schedulerData)
-      .withElo(newCardElo)
-
-    // Persist card and profile
+    const updatedCard = card.withSchedulerData(schedulerData).withElo(newCardElo)
     this._cardRepo.save(updatedCard)
-    const updatedProfile = profile.withElo(newUserElo)
-    this._profileRepo.save(updatedProfile)
 
-    // Unlock cards that the user's new ELO now covers
+    let updatedProfile = profile.withElo(newUserElo)
     if (newUserElo > profile.eloRating) {
       this._cardRepo.unlockCardsUpToElo(newUserElo)
     }
 
     const updatedSession = session.recordResult(card.id, rating, updatedCard, userDelta)
+
+    if (updatedSession.isFinished) {
+      updatedProfile = updatedProfile.withSessionCompleted(updatedSession.cards.length)
+    }
+
+    this._profileRepo.save(updatedProfile)
+    this._sessionRepo.save(updatedSession, updatedProfile.eloRating)
+
     return { session: updatedSession, userDelta, cardDelta }
   }
 
-  _findCollectionInTree(tree, id) {
-    for (const col of tree) {
-      if (col.id === id) return col
-      const found = this._findCollectionInTree(col.children, id)
-      if (found) return found
-    }
-    return null
+  markAbandoned(sessionId) {
+    this._sessionRepo.markAbandoned(sessionId)
   }
 }

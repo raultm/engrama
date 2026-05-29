@@ -81,6 +81,10 @@ export class DatabaseAdapter {
         value TEXT NOT NULL
       );
     `)
+
+    // Columnas añadidas tras el schema inicial — ignorar si ya existen
+    try { this._db.run(`ALTER TABLE study_sessions ADD COLUMN synced INTEGER DEFAULT 0`) } catch {}
+
     this.persist()
   }
 
