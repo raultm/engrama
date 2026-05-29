@@ -40,6 +40,24 @@ export class StudySessionRepository {
     )
   }
 
+  findUnsynced() {
+    return this._db.queryAll(
+      `SELECT * FROM study_sessions
+       WHERE synced = 0 AND status IN ('completed', 'abandoned')
+       ORDER BY started_at ASC
+       LIMIT 100`
+    )
+  }
+
+  markSynced(ids) {
+    if (!ids.length) return
+    const placeholders = ids.map(() => '?').join(',')
+    this._db.run(
+      `UPDATE study_sessions SET synced = 1 WHERE id IN (${placeholders})`,
+      ids
+    )
+  }
+
   findAll() {
     return this._db.queryAll(`SELECT * FROM study_sessions ORDER BY started_at DESC`)
   }

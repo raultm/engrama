@@ -6,7 +6,7 @@ import { buildSeedRegistry } from '../../data/seedRegistry.js'
 import { SeedSelectionView } from './SeedSelectionView.js'
 
 export function HomeView(rootEl) {
-  const { studySessionService, userProfileRepository } = getContainer()
+  const { studySessionService, userProfileRepository, syncService } = getContainer()
 
   const profile = userProfileRepository.getOrCreate()
   const stats = studySessionService.getAllCardsStats()
@@ -14,6 +14,7 @@ export function HomeView(rootEl) {
 
   const registry = getRegistry()
   const activeId = getActiveId()
+  const syncState = syncService.getLocalState()
 
   rootEl.innerHTML = `
     <div class="view home-view">
@@ -79,6 +80,8 @@ export function HomeView(rootEl) {
           </div>
         </section>
 
+        ${_syncBanner(syncState)}
+
         <section class="counters-section">
           <div class="counter counter--due">
             <span class="counter__number">${stats.due}</span>
@@ -136,6 +139,14 @@ export function HomeView(rootEl) {
   })
 
   rootEl.querySelector('#btn-stats').addEventListener('click', () => navigate('stats'))
+
+  // Si está pending, hacer polling suave para detectar aprobación
+  if (syncState.status === 'pending') {
+    setTimeout(async () => {
+      const newStatus = await syncService.refreshStatus()
+      if (newStatus === 'approved') HomeView(rootEl)
+    }, 15000)
+  }
 }
 
 const RANKS = [
@@ -151,6 +162,19 @@ const RANKS = [
 
 export function getRank(elo) {
   return (RANKS.find(r => elo >= r.min) ?? RANKS.at(-1)).name
+}
+
+function _syncBanner({ status, engramaName }) {
+  if (!status || status === 'approved') return ''
+  if (status === 'pending') return `
+    <div class="sync-banner sync-banner--pending">
+      <span>Esperando aprobación del profesor para sincronizar <strong>${engramaName ?? ''}</strong></span>
+    </div>`
+  if (status === 'rejected') return `
+    <div class="sync-banner sync-banner--rejected">
+      <span>Acceso denegado por el profesor — el estudio offline sigue disponible</span>
+    </div>`
+  return ''
 }
 
 function escapeHtml(str) {

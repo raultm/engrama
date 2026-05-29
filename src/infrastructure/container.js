@@ -7,6 +7,7 @@ import { CollectionService } from '../application/services/CollectionService.js'
 import { FlashCardService } from '../application/services/FlashCardService.js'
 import { StudySessionService } from '../application/services/StudySessionService.js'
 import { SeedService } from '../application/services/SeedService.js'
+import { SyncService } from '../application/services/SyncService.js'
 
 let container = null
 
@@ -34,6 +35,8 @@ export async function initContainer(engramaId = 'default') {
     userProfileRepository,
   })
 
+  const syncService = new SyncService({ studySessionRepository })
+
   container = {
     db,
     collectionRepository,
@@ -44,6 +47,7 @@ export async function initContainer(engramaId = 'default') {
     flashCardService,
     studySessionService,
     seedService,
+    syncService,
   }
 
   return container

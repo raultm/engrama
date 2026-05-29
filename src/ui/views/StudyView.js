@@ -158,7 +158,9 @@ function _renderShell(rootEl, initialSession, studySessionService) {
 
     if (next.isFinished) {
       cleanup()
-      setTimeout(() => _renderSummary(rootEl, next), 400)
+      const syncPromise = getContainer().syncService.trySyncSessions()
+        .catch(() => ({ skipped: true, reason: 'error' }))
+      setTimeout(() => _renderSummary(rootEl, next, syncPromise), 400)
     } else {
       setTimeout(() => transitionToNext(), 350)
     }
@@ -176,7 +178,7 @@ function _renderShell(rootEl, initialSession, studySessionService) {
   rootEl.addEventListener('keydown', onKey, { signal: controller.signal })
 }
 
-function _renderSummary(rootEl, session) {
+function _renderSummary(rootEl, session, syncPromise) {
   const s = session.getSummary()
   const repeated = s.answered - s.total
   rootEl.innerHTML = `
@@ -209,6 +211,7 @@ function _renderSummary(rootEl, session) {
               ${s.totalEloChange >= 0 ? '+' : ''}${s.totalEloChange} ELO
             </span>
           </div>
+          <p class="summary-sync" id="summary-sync" aria-live="polite"></p>
           <div class="summary-actions">
             <button class="btn btn--primary" id="btn-home">Inicio</button>
             <button class="btn btn--secondary" id="btn-again">Otra sesión</button>
@@ -219,6 +222,33 @@ function _renderSummary(rootEl, session) {
   `
   rootEl.querySelector('#btn-home').addEventListener('click', () => navigate('/'))
   rootEl.querySelector('#btn-again').addEventListener('click', () => StudyView(rootEl))
+
+  if (syncPromise) {
+    const el = rootEl.querySelector('#summary-sync')
+    el.textContent = 'Sincronizando…'
+    syncPromise.then(result => {
+      if (!rootEl.querySelector('#summary-sync')) return
+      if (result.synced > 0) {
+        el.textContent = '✓ Sesión sincronizada'
+        el.className = 'summary-sync summary-sync--ok'
+      } else if (!result.reason || result.reason === 'not_joined') {
+        el.textContent = ''
+      } else {
+        el.textContent = _syncStatusText(result.reason)
+        el.className = 'summary-sync summary-sync--pending'
+      }
+    })
+  }
+}
+
+function _syncStatusText(reason) {
+  switch (reason) {
+    case 'pending':      return '⏳ Pendiente de aprobación del profesor'
+    case 'rejected':     return '✕ Acceso denegado'
+    case 'network_error':
+    case 'server_error': return '↻ Sin conexión — se sincronizará más tarde'
+    default:             return ''
+  }
 }
 
 function _renderNoCards(rootEl) {

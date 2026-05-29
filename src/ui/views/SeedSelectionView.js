@@ -1,5 +1,6 @@
 import { initContainer } from '../../infrastructure/container.js'
 import { getRegistry, registerEngrama, setActiveId, getActiveId } from '../engramaRegistry.js'
+import { JoinClassView } from './JoinClassView.js'
 
 export function SeedSelectionView(rootEl, seedRegistry) {
   const installedIds = new Set(getRegistry().map(e => e.id))
@@ -18,6 +19,15 @@ export function SeedSelectionView(rootEl, seedRegistry) {
         </div>
 
         <div class="seed-list">
+
+          <button class="seed-option seed-option--join" id="btn-join-class" aria-label="Unirse a una clase con código">
+            <span class="seed-option__icon">⌗</span>
+            <div class="seed-option__text">
+              <span class="seed-option__name">Unirse a una clase</span>
+              <span class="seed-option__desc">Introduce el código que te dio tu profesor</span>
+            </div>
+            <span class="seed-option__badge seed-option__badge--upload">Código</span>
+          </button>
 
           <label class="seed-option seed-option--upload" aria-label="Subir archivo propio">
             <span class="seed-option__icon">↑</span>
@@ -55,6 +65,10 @@ export function SeedSelectionView(rootEl, seedRegistry) {
       </main>
     </div>
   `
+
+  rootEl.querySelector('#btn-join-class').addEventListener('click', () => {
+    JoinClassView(rootEl, { onBack: () => SeedSelectionView(rootEl, seedRegistry) })
+  })
 
   rootEl.querySelector('#btn-back')?.addEventListener('click', () => {
     window.location.hash = '/'

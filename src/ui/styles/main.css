@@ -298,15 +298,108 @@ kbd {
   border-color: var(--color-primary);
 }
 
-/* ===== SEED SELECTION: upload option ===== */
-.seed-option--upload {
+/* ===== SEED SELECTION: upload / join options ===== */
+.seed-option--upload,
+.seed-option--join {
   cursor: pointer;
   border-style: dashed;
 }
 
-.seed-option--upload:hover {
+.seed-option--upload:hover,
+.seed-option--join:hover {
   border-color: var(--color-primary);
   border-style: dashed;
+}
+
+/* ===== JOIN CLASS VIEW ===== */
+.join-class-view {
+  justify-content: center;
+  align-items: center;
+}
+
+.join-class-main {
+  display: flex;
+  justify-content: center;
+  padding: 32px 24px;
+  width: 100%;
+}
+
+.join-class-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.join-class-card h1 { font-size: 22px; }
+.join-class-subtitle { color: var(--color-text-muted); font-size: 14px; }
+
+.join-class-engrama-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--color-surface2);
+  border-radius: var(--radius-md);
+}
+
+.join-class-engrama-name { font-weight: 600; font-size: 16px; }
+.join-class-engrama-code { font-size: 12px; color: var(--color-text-muted); font-family: monospace; }
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.join-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 15px;
+  font-family: var(--font);
+  transition: border-color var(--transition);
+}
+
+.join-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.join-error {
+  font-size: 13px;
+  color: var(--color-forgotten);
+  margin: -4px 0;
+}
+
+/* ===== SYNC BANNER ===== */
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.sync-banner--pending {
+  background: rgba(255, 184, 108, 0.12);
+  border: 1px solid rgba(255, 184, 108, 0.3);
+  color: var(--color-hard);
+}
+
+.sync-banner--rejected {
+  background: rgba(255, 85, 85, 0.1);
+  border: 1px solid rgba(255, 85, 85, 0.25);
+  color: var(--color-forgotten);
 }
 
 .seed-option__badge--upload {
@@ -880,6 +973,16 @@ kbd {
   color: var(--color-text-muted);
   margin: -4px 0 8px;
 }
+
+.summary-sync {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  min-height: 20px;
+  margin-top: -8px;
+}
+
+.summary-sync--ok      { color: var(--color-perfect); }
+.summary-sync--pending { color: var(--color-hard); }
 
 .summary-elo {
   font-size: 22px;
