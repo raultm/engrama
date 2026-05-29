@@ -16,7 +16,8 @@ function metaFromJson(data) {
 }
 
 function metaFromMarkdown(raw) {
-  const match = raw.match(/^---\n([\s\S]*?)\n---/)
+  const normalized = raw.replace(/\r\n/g, '\n')
+  const match = normalized.match(/^---\n([\s\S]*?)\n---/)
   const meta = {}
   if (match) {
     for (const line of match[1].split('\n')) {

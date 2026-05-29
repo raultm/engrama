@@ -1,6 +1,6 @@
 export class MarkdownSeedParser {
   parse(markdown) {
-    const { meta, body } = this._parseFrontMatter(markdown)
+    const { meta, body } = this._parseFrontMatter(markdown.replace(/\r\n/g, '\n'))
     const slug = this._slugify(meta.name ?? 'seed')
     const cards = this._parseCards(body, slug)
 
