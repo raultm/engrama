@@ -793,6 +793,7 @@ kbd {
   background: var(--color-bg);
   height: 100vh;       /* fallback */
   height: 100dvh;      /* ajusta al viewport visible real en iOS Chrome */
+  min-height: 0;       /* cancela el min-height:100vh heredado de .view */
   display: flex;
   flex-direction: column;
 }
