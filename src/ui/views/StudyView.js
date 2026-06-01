@@ -1,6 +1,7 @@
 import { getContainer } from '../../infrastructure/container.js'
 import { navigate } from '../router.js'
 import { showConfirm } from '../components/ConfirmModal.js'
+import { fillCardContent, fillAnswerContent } from '../components/CardRenderer.js'
 
 const RATINGS = [
   { value: 0, label: 'Olvidada', key: '1', className: 'rating--forgotten' },
@@ -16,7 +17,7 @@ export function StudyView(rootEl) {
   _renderShell(rootEl, session, studySessionService)
 }
 
-function _renderShell(rootEl, initialSession, studySessionService) {
+async function _renderShell(rootEl, initialSession, studySessionService) {
   let session = initialSession
   let revealed = false
   const controller = new AbortController()
@@ -42,11 +43,6 @@ function _renderShell(rootEl, initialSession, studySessionService) {
             <div class="flashcard__content" id="front-content"></div>
             <div class="flashcard__tags" id="front-tags"></div>
           </div>
-          <div class="flashcard__back" id="card-back" hidden>
-            <div class="flashcard__divider"></div>
-            <div class="flashcard__label">Respuesta</div>
-            <div class="flashcard__content flashcard__content--answer" id="back-content"></div>
-          </div>
         </div>
       </div>
 
@@ -64,11 +60,8 @@ function _renderShell(rootEl, initialSession, studySessionService) {
 
   // Element refs
   const flashcard     = rootEl.querySelector('#flashcard')
-  const frontContent  = rootEl.querySelector('#front-content')
+  const questionEl    = rootEl.querySelector('#front-content')
   const frontTags     = rootEl.querySelector('#front-tags')
-  const backContent   = rootEl.querySelector('#back-content')
-  const cardFront     = rootEl.querySelector('#card-front')
-  const cardBack      = rootEl.querySelector('#card-back')
   const btnReveal     = rootEl.querySelector('#btn-reveal')
   const ratingButtons = rootEl.querySelector('#rating-buttons')
   const eloDiff       = rootEl.querySelector('#elo-diff')
@@ -85,18 +78,12 @@ function _renderShell(rootEl, initialSession, studySessionService) {
   }
   window.addEventListener('beforeunload', onUnload)
 
-  function fillCard(c) {
-    frontContent.textContent = c.frontText
-    backContent.textContent  = c.backText
-    frontTags.innerHTML = c.tags.map(t =>
-      `<span class="tag">${escapeHtml(t)}</span>`
-    ).join('')
+  async function fillCard(c) {
+    await fillCardContent(c, { questionEl, tagsEl: frontTags })
   }
 
   function resetState() {
     revealed = false
-    cardFront.removeAttribute('hidden')
-    cardBack.setAttribute('hidden', '')
     btnReveal.removeAttribute('hidden')
     ratingButtons.setAttribute('hidden', '')
     eloDiff.textContent = ''
@@ -109,24 +96,24 @@ function _renderShell(rootEl, initialSession, studySessionService) {
 
   function transitionToNext() {
     flashcard.classList.add('card-changing')
-    setTimeout(() => {
-      fillCard(session.currentCard)
+    setTimeout(async () => {
+      await fillCard(session.currentCard)
       resetState()
       updateProgress()
       flashcard.classList.remove('card-changing')
     }, 140)
   }
 
-  function reveal() {
+  async function reveal() {
     if (revealed) return
     revealed = true
-    cardBack.removeAttribute('hidden')
+    await fillAnswerContent(session.currentCard, { questionEl })
     btnReveal.setAttribute('hidden', '')
     ratingButtons.removeAttribute('hidden')
     ratingButtons.querySelector('.rating-btn').focus()
   }
 
-  fillCard(card)
+  await fillCard(card)
   updateProgress()
 
   rootEl.querySelector('#btn-exit').addEventListener('click', async () => {
@@ -267,8 +254,3 @@ function _renderNoCards(rootEl) {
   rootEl.querySelector('#btn-home').addEventListener('click', () => navigate('/'))
 }
 
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str
-  return d.innerHTML
-}

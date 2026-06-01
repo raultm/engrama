@@ -29,14 +29,26 @@ export function SeedSelectionView(rootEl, seedRegistry) {
             <span class="seed-option__badge seed-option__badge--upload">Código</span>
           </button>
 
+          <button class="seed-option seed-option--demo ${installedIds.has('test-atmosfera') ? 'seed-option--installed' : ''} ${'test-atmosfera' === activeId ? 'seed-option--active' : ''}"
+            id="btn-demo-atmosfera" aria-label="Demo: oclusión de imagen">
+            <span class="seed-option__icon">◈</span>
+            <div class="seed-option__text">
+              <span class="seed-option__name">Demo — Capas de la Atmósfera</span>
+              <span class="seed-option__desc">Básica · Cloze · Oclusión de imagen (9 tarjetas)</span>
+            </div>
+            <span class="seed-option__badge" id="demo-badge">
+              ${'test-atmosfera' === activeId ? 'Activo' : installedIds.has('test-atmosfera') ? 'Instalado' : '→'}
+            </span>
+          </button>
+
           <label class="seed-option seed-option--upload" aria-label="Subir archivo propio">
             <span class="seed-option__icon">↑</span>
             <div class="seed-option__text">
               <span class="seed-option__name">Subir archivo</span>
-              <span class="seed-option__desc">Importa tu propio mazo en formato .json o .md</span>
+              <span class="seed-option__desc">Importa tu propio mazo en formato .apkg, .json o .md</span>
             </div>
             <span class="seed-option__badge seed-option__badge--upload" id="upload-badge">Elegir</span>
-            <input type="file" accept=".json,.md" style="display:none" id="file-upload">
+            <input type="file" accept=".apkg,.json,.md" style="display:none" id="file-upload">
           </label>
 
           ${seedRegistry.map(entry => {
@@ -70,6 +82,34 @@ export function SeedSelectionView(rootEl, seedRegistry) {
     JoinClassView(rootEl, { onBack: () => SeedSelectionView(rootEl, seedRegistry) })
   })
 
+  rootEl.querySelector('#btn-demo-atmosfera').addEventListener('click', async () => {
+    const DEMO_ID = 'test-atmosfera'
+    const badge = rootEl.querySelector('#demo-badge')
+
+    if (installedIds.has(DEMO_ID)) {
+      setActiveId(DEMO_ID)
+      location.reload()
+      return
+    }
+
+    badge.textContent = '…'
+    try {
+      const res = await fetch('./seeds/test-atmosfera.apkg')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const file = new File([blob], 'test-atmosfera.apkg', { type: 'application/zip' })
+      const container = await initContainer(DEMO_ID)
+      await container.ankiImporter.importApkg(file)
+      registerEngrama(DEMO_ID, 'Demo — Capas de la Atmósfera')
+      setActiveId(DEMO_ID)
+      location.reload()
+    } catch (err) {
+      badge.textContent = 'Error'
+      console.error('Demo import error:', err)
+      alert(`Error al cargar el demo: ${err.message}`)
+    }
+  })
+
   rootEl.querySelector('#btn-back')?.addEventListener('click', () => {
     window.location.hash = '/'
     window.location.reload()
@@ -84,22 +124,30 @@ export function SeedSelectionView(rootEl, seedRegistry) {
     badge.textContent = '…'
 
     try {
-      const format = file.name.endsWith('.md') ? 'markdown' : 'json'
-      const text = await file.text()
-
-      // Derive engrama id from filename (without extension)
-      const engramaId = file.name.replace(/\.(json|md)$/i, '').toLowerCase()
+      const engramaId = file.name
+        .replace(/\.(apkg|json|md)$/i, '').toLowerCase()
         .normalize('NFD').replace(/[̀-ͯ]/g, '')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
         || 'custom'
 
       const container = await initContainer(engramaId)
-      const result = await container.seedService.importFile(text, format)
 
-      // Get the name from the parsed seed (already imported into DB)
+      if (file.name.endsWith('.apkg')) {
+        const result = await container.ankiImporter.importApkg(file)
+        const roots = container.collectionRepository.findRoots()
+        const name = roots[0]?.name ?? engramaId
+        registerEngrama(engramaId, name)
+        setActiveId(engramaId)
+        location.reload()
+        return
+      }
+
+      const format = file.name.endsWith('.md') ? 'markdown' : 'json'
+      const text = await file.text()
+      await container.seedService.importFile(text, format)
+
       const roots = container.collectionRepository.findRoots()
       const name = roots[0]?.name ?? engramaId
-
       registerEngrama(engramaId, name)
       setActiveId(engramaId)
       location.reload()

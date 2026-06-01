@@ -84,6 +84,8 @@ export class DatabaseAdapter {
 
     // Columnas añadidas tras el schema inicial — ignorar si ya existen
     try { this._db.run(`ALTER TABLE study_sessions ADD COLUMN synced INTEGER DEFAULT 0`) } catch {}
+    try { this._db.run(`ALTER TABLE flashcards ADD COLUMN card_type TEXT DEFAULT 'basic'`) } catch {}
+    try { this._db.run(`ALTER TABLE flashcards ADD COLUMN extra_data TEXT DEFAULT '{}'`) } catch {}
 
     this.persist()
   }

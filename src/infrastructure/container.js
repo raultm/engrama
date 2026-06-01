@@ -8,6 +8,7 @@ import { FlashCardService } from '../application/services/FlashCardService.js'
 import { StudySessionService } from '../application/services/StudySessionService.js'
 import { SeedService } from '../application/services/SeedService.js'
 import { SyncService } from '../application/services/SyncService.js'
+import { AnkiImporter } from '../application/services/AnkiImporter.js'
 
 let container = null
 
@@ -37,6 +38,13 @@ export async function initContainer(engramaId = 'default') {
 
   const syncService = new SyncService({ studySessionRepository })
 
+  const ankiImporter = new AnkiImporter({
+    db,
+    collectionRepository,
+    flashCardRepository,
+    userProfileRepository,
+  })
+
   container = {
     db,
     collectionRepository,
@@ -48,6 +56,7 @@ export async function initContainer(engramaId = 'default') {
     studySessionService,
     seedService,
     syncService,
+    ankiImporter,
   }
 
   return container

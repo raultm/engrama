@@ -20,11 +20,13 @@ export class FlashCardRepository {
   save(card) {
     this._db.run(
       `INSERT OR REPLACE INTO flashcards
-       (id, collection_id, front_text, back_text, elo_difficulty, created_at, updated_at,
+       (id, collection_id, front_text, back_text, card_type, extra_data,
+        elo_difficulty, created_at, updated_at,
         scheduler_data, tags, prerequisites, is_unlocked)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         card.id, card.collectionId, card.frontText, card.backText,
+        card.cardType ?? 'basic', JSON.stringify(card.extraData ?? {}),
         card.eloDifficulty, card.createdAt, card.updatedAt,
         JSON.stringify(card.schedulerData), JSON.stringify(card.tags),
         JSON.stringify(card.prerequisites), card.isUnlocked ? 1 : 0,
@@ -59,6 +61,8 @@ export class FlashCardRepository {
       collectionId: row.collection_id,
       frontText: row.front_text,
       backText: row.back_text,
+      cardType: row.card_type ?? 'basic',
+      extraData: row.extra_data ?? '{}',
       eloDifficulty: row.elo_difficulty,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

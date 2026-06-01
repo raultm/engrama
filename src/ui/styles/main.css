@@ -968,6 +968,112 @@ kbd {
 .elo-diff--up { color: var(--color-elo-up); }
 .elo-diff--down { color: var(--color-elo-down); }
 
+/* ===== CLOZE CARDS ===== */
+.cloze-blank {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cloze-answer {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 4px;
+  background: rgba(76, 255, 145, 0.18);
+  color: var(--color-perfect);
+  font-weight: 600;
+  border: 1px solid rgba(76, 255, 145, 0.35);
+}
+
+/* ===== IMAGE OCCLUSION CARDS ===== */
+
+/* Flashcard with image: remove padding so image fills edge-to-edge */
+.flashcard[data-card-type="image_occlusion"] {
+  padding: 0;
+}
+
+.flashcard[data-card-type="image_occlusion"] .flashcard__front {
+  padding: 0;
+}
+
+.flashcard[data-card-type="image_occlusion"] .flashcard__back {
+  padding: 16px 24px 24px;
+}
+
+.flashcard[data-card-type="image_occlusion"] .flashcard__label {
+  padding: 16px 24px 0;
+}
+
+.flashcard[data-card-type="image_occlusion"] .flashcard__content {
+  font-size: inherit;
+  text-align: left;
+  white-space: normal;
+  line-height: 0;
+}
+
+.flashcard[data-card-type="image_occlusion"] .flashcard__tags {
+  padding: 0 24px 16px;
+  justify-content: flex-start;
+}
+
+.occlusion-header {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  padding: 10px 24px 6px;
+  text-align: center;
+}
+
+.occlusion-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+
+.occlusion-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.occlusion-svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.occlusion-answer-label {
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-perfect);
+  margin: 0;
+}
+
+.occlusion-back-extra {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: 8px;
+}
+
+.occlusion-error {
+  color: var(--color-forgotten);
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
 /* ===== SUMMARY ===== */
 .summary-view { justify-content: center; }
 .summary-main {

@@ -55,6 +55,8 @@ export class CollectionRepository {
         collectionId: r.collection_id,
         frontText: r.front_text,
         backText: r.back_text,
+        cardType: r.card_type ?? 'basic',
+        extraData: r.extra_data ?? '{}',
         eloDifficulty: r.elo_difficulty,
         createdAt: r.created_at,
         updatedAt: r.updated_at,

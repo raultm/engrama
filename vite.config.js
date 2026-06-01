@@ -6,6 +6,9 @@ export default defineConfig(({ command }) => ({
     environment: 'node',
     globals: true,
   },
+  optimizeDeps: {
+    include: ['fzstd'],
+  },
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',

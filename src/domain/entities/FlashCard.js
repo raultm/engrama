@@ -4,6 +4,8 @@ export class FlashCard {
     collectionId,
     frontText,
     backText,
+    cardType = 'basic',
+    extraData = {},
     eloDifficulty = 1500,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString(),
@@ -16,6 +18,8 @@ export class FlashCard {
     this.collectionId = collectionId
     this.frontText = frontText
     this.backText = backText
+    this.cardType = cardType || 'basic'
+    this.extraData = typeof extraData === 'string' ? JSON.parse(extraData) : extraData
     this.eloDifficulty = eloDifficulty
     this.createdAt = createdAt
     this.updatedAt = updatedAt
