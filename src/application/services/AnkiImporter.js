@@ -214,7 +214,7 @@ export class AnkiImporter {
         backText:  ord === 0 ? f1 : f0,
         cardType:  'basic',
         extraData: {},
-        tags, eloDifficulty: 1500, createdAt: now, updatedAt: now,
+        tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
         schedulerData: {}, prerequisites: [], isUnlocked: true,
       },
     }))
@@ -232,7 +232,7 @@ export class AnkiImporter {
         backText:  '',
         cardType:  'cloze',
         extraData: { clozeIndex: ord + 1 },
-        tags, eloDifficulty: 1500, createdAt: now, updatedAt: now,
+        tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
         schedulerData: {}, prerequisites: [], isUnlocked: true,
       },
     }))
@@ -272,8 +272,8 @@ export class AnkiImporter {
           backText:  label,
           cardType:  'image_occlusion',
           extraData: { imageId, masks, activeMaskId, header, backExtra },
-          tags, eloDifficulty: 1500, createdAt: now, updatedAt: now,
-          schedulerData: {}, prerequisites: [], isUnlocked: true,
+          tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
+          schedulerData: {}, prerequisites: [], isUnlocked: _isUnlockedFromTags(tags),
         },
       }
     })
@@ -456,6 +456,21 @@ function _parseMediaProto(bytes) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+function _eloFromTags(tags) {
+  for (const tag of tags) {
+    const m = tag.match(/^elo[=:](\d+)$/i)
+    if (m) return parseInt(m[1], 10)
+  }
+  return 1500
+}
+
+function _isUnlockedFromTags(tags) {
+  for (const tag of tags) {
+    if (/^locked[=:]?true$/i.test(tag) || /^locked$/i.test(tag)) return false
+  }
+  return true
+}
 
 function _stripHtml(html) {
   if (!html) return ''
