@@ -355,6 +355,9 @@ function _readSchema(ankiDb) {
   return { models, decks }
 }
 
+// ── Exports para tests ─────────────────────────────────────────────────────
+export { _parseNewIOField, _parseMediaProto, _eloFromTags, _isUnlockedFromTags }
+
 // ── Parsers para formatos Anki 24.x ────────────────────────────────────────
 
 // Parsea máscaras del nuevo formato: {{cN::image-occlusion:rect:left=X:top=Y:width=W:height=H:oi=1}}

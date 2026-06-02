@@ -1,7 +1,7 @@
 import { getContainer } from '../../infrastructure/container.js'
 import { navigate } from '../router.js'
 import { showConfirm } from '../components/ConfirmModal.js'
-import { getRank } from './HomeView.js'
+import { getRank } from '../../domain/ranks.js'
 import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engramaRegistry.js'
 
 export function StatsView(rootEl) {
@@ -10,8 +10,6 @@ export function StatsView(rootEl) {
   const stats = studySessionService.getAllCardsStats()
   const sessions = studySessionRepository.findCompleted()
 
-  const level = profile.getLevel()
-  const levelPct = Math.round(profile.getLevelProgress() * 100)
   const unlockPct = Math.round((stats.unlockedCount / stats.total) * 100)
 
   const nextMilestone = stats.lockedMilestones[0]
@@ -31,18 +29,6 @@ export function StatsView(rootEl) {
             <span class="stats-block__value">${profile.eloRating}</span>
             <span class="stats-block__label">ELO actual</span>
           </div>
-          <div class="stats-block">
-            <span class="stats-block__value" style="font-size:18px">${getRank(profile.eloRating)}</span>
-            <span class="stats-block__label">Rango</span>
-          </div>
-          <div class="stats-block">
-            <span class="stats-block__value">${profile.totalCardsStudied}</span>
-            <span class="stats-block__label">Tarjetas estudiadas</span>
-          </div>
-          <div class="stats-block">
-            <span class="stats-block__value">${profile.totalSessionsCompleted}</span>
-            <span class="stats-block__label">Sesiones completadas</span>
-          </div>
           <div class="stats-block stats-block--accent">
             <span class="stats-block__value">${stats.due}</span>
             <span class="stats-block__label">Pendientes hoy</span>
@@ -50,10 +36,6 @@ export function StatsView(rootEl) {
           <div class="stats-block">
             <span class="stats-block__value">${stats.newCards}</span>
             <span class="stats-block__label">Nuevas sin ver</span>
-          </div>
-          <div class="stats-block">
-            <span class="stats-block__value">${stats.notDue}</span>
-            <span class="stats-block__label">Programadas</span>
           </div>
           <div class="stats-block">
             <span class="stats-block__value">${stats.total}</span>
@@ -88,14 +70,6 @@ export function StatsView(rootEl) {
           `}
         </div>
 
-        <div class="elo-level-display">
-          <h2>Nivel ${level}</h2>
-          <div class="elo-track">
-            <div class="elo-fill" style="width:${levelPct}%"></div>
-          </div>
-          <p>${levelPct}% hacia nivel ${level + 1}</p>
-        </div>
-
         <div class="session-history">
           <h2>Historial de sesiones</h2>
           ${_renderEloChart(sessions)}
@@ -105,8 +79,8 @@ export function StatsView(rootEl) {
         <div class="danger-zone">
           <button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>
           <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
-            Importar archivo de datos (.json / .md)
-            <input type="file" id="file-input" accept=".json,.md" style="display:none">
+            Importar archivo de datos (.apkg / .json / .md)
+            <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
           </label>
           <button class="btn--danger-full" id="btn-delete-engrama">Eliminar este Engrama</button>
           <button class="btn--danger-full" id="btn-reset" style="opacity:0.6;font-size:12px">Borrar toda la base de datos</button>
@@ -143,10 +117,16 @@ export function StatsView(rootEl) {
     const file = e.target.files[0]
     if (!file) return
 
-    const format = file.name.endsWith('.md') ? 'markdown' : 'json'
-    const text = await file.text()
-
     try {
+      if (file.name.endsWith('.apkg')) {
+        const { ankiImporter } = getContainer()
+        await ankiImporter.importApkg(file)
+        location.reload()
+        return
+      }
+
+      const format = file.name.endsWith('.md') ? 'markdown' : 'json'
+      const text = await file.text()
       const { seedService } = getContainer()
       const result = await seedService.importFile(text, format)
 

@@ -87,5 +87,38 @@ describe('SM2Scheduler', () => {
       const { schedulerData } = scheduler.processAnswer(card, 0)
       expect(schedulerData.easiness).toBeGreaterThanOrEqual(1.3)
     })
+
+    it('easiness increases on perfect (3) answer', () => {
+      const card = makeCard('c1', { easiness: 2.0 })
+      const { schedulerData } = scheduler.processAnswer(card, 3)
+      expect(schedulerData.easiness).toBeGreaterThan(2.0)
+    })
+
+    it('hard (1) no re-encola pero sí reinicia el intervalo', () => {
+      const card = makeCard('c1', { easiness: 2.5, interval: 10, repetitions: 5 })
+      const { schedulerData } = scheduler.processAnswer(card, 1)
+      expect(schedulerData.repetitions).toBe(0)
+      expect(schedulerData.interval).toBe(1)
+    })
+  })
+
+  describe('selectCards — límites de sesión', () => {
+    it('limita la sesión a 10 tarjetas aunque haya más pendientes', () => {
+      const cards = Array.from({ length: 15 }, (_, i) => makeCard(`c${i}`))
+      expect(scheduler.selectCards(cards)).toHaveLength(10)
+    })
+
+    it('devuelve 0 tarjetas cuando todas están bloqueadas', () => {
+      const cards = [makeCard('c1', {}, false), makeCard('c2', {}, false)]
+      expect(scheduler.selectCards(cards)).toHaveLength(0)
+    })
+
+    it('sitúa los repasos antes que las tarjetas nuevas', () => {
+      const future = new Date(Date.now() - 1000).toISOString() // pasado
+      const review = makeCard('review', { nextReview: future, repetitions: 3 })
+      const newCard = makeCard('new')
+      const selected = scheduler.selectCards([newCard, review])
+      expect(selected[0].id).toBe('review')
+    })
   })
 })

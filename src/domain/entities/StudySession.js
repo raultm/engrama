@@ -51,9 +51,16 @@ export class StudySession {
     return mastered.size
   }
 
+  // Tarjetas que ya no van a aparecer más (masterizadas O agotadas sus reintentos)
+  get doneCount() {
+    const inQueue = new Set(this.queue.map(c => c.id))
+    const attempted = new Set(this.results.map(r => r.cardId))
+    return [...attempted].filter(id => !inQueue.has(id)).length
+  }
+
   get progress() {
     if (this.cards.length === 0) return 1
-    return this.masteredCount / this.cards.length
+    return this.doneCount / this.cards.length
   }
 
   recordResult(cardId, rating, updatedCard, eloChange) {

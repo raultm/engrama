@@ -4,6 +4,7 @@ import { toggleTheme, getTheme } from '../theme.js'
 import { getRegistry, getActiveId, setActiveId } from '../engramaRegistry.js'
 import { buildSeedRegistry } from '../../data/seedRegistry.js'
 import { SeedSelectionView } from './SeedSelectionView.js'
+import { RANKS, getRank } from '../../domain/ranks.js'
 
 export function HomeView(rootEl) {
   const { studySessionService, userProfileRepository, syncService } = getContainer()
@@ -48,7 +49,7 @@ export function HomeView(rootEl) {
           <button class="btn btn--ghost btn--icon btn--sm" id="btn-stats" aria-label="Estadísticas">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </button>
         </div>
@@ -58,7 +59,6 @@ export function HomeView(rootEl) {
 
         <section class="elo-section">
           <div class="elo-level">
-            ${escapeHtml(profile.displayName)} ·
             <span class="rank-badge" id="rank-badge" tabindex="0" aria-label="Rango actual: ${getRank(profile.eloRating)}">
               <strong>${getRank(profile.eloRating)}</strong>
               <div class="rank-tooltip" role="tooltip">
@@ -74,30 +74,16 @@ export function HomeView(rootEl) {
           <div class="elo-track" role="progressbar" aria-valuenow="${Math.round(profile.getLevelProgress() * 100)}" aria-valuemin="0" aria-valuemax="100">
             <div class="elo-fill" style="width:${Math.round(profile.getLevelProgress() * 100)}%"></div>
           </div>
-          <div class="elo-meta">
-            <span>${profile.eloRating} ELO</span>
-            <span>${Math.round(profile.getLevelProgress() * 100)}% → ${getRank(profile.eloRating + 100)}</span>
-          </div>
         </section>
 
         ${_syncBanner(syncState)}
 
         <section class="counters-section">
-          <div class="counter counter--due">
+          <div class="counter counter--due" data-label="Para hoy">
             <span class="counter__number">${stats.due}</span>
-            <span class="counter__label">para hoy</span>
           </div>
-          <div class="counter counter--notdue">
-            <span class="counter__number">${stats.notDue}</span>
-            <span class="counter__label">programadas</span>
-          </div>
-          <div class="counter counter--new">
+          <div class="counter counter--new" data-label="Nuevas">
             <span class="counter__number">${stats.newCards}</span>
-            <span class="counter__label">nuevas</span>
-          </div>
-          <div class="counter counter--total">
-            <span class="counter__number">${stats.total}</span>
-            <span class="counter__label">total</span>
           </div>
         </section>
 
@@ -107,7 +93,7 @@ export function HomeView(rootEl) {
             id="btn-study"
             ${canStudy ? '' : 'disabled aria-disabled="true"'}
           >
-            ${canStudy ? `Estudiar · ${stats.due} tarjetas` : '✓ Al día por hoy'}
+            ${canStudy ? _studyLabel(stats) : '✓ Al día por hoy'}
           </button>
           ${!canStudy && stats.total > 0 ? `<p class="cta-hint">Vuelve mañana para continuar</p>` : ''}
           ${stats.total === 0 ? `<p class="cta-hint">No hay tarjetas cargadas</p>` : ''}
@@ -149,20 +135,6 @@ export function HomeView(rootEl) {
   }
 }
 
-const RANKS = [
-  { min: 2100, name: 'Gran Maestro' },
-  { min: 2000, name: 'Maestro' },
-  { min: 1900, name: 'Experto' },
-  { min: 1800, name: 'Conocedor' },
-  { min: 1700, name: 'Practicante' },
-  { min: 1600, name: 'Estudiante' },
-  { min: 1500, name: 'Aprendiz' },
-  { min: 0,    name: 'Curioso' },
-]
-
-export function getRank(elo) {
-  return (RANKS.find(r => elo >= r.min) ?? RANKS.at(-1)).name
-}
 
 function _syncBanner({ status, engramaName }) {
   if (!status || status === 'approved') return ''
@@ -175,6 +147,13 @@ function _syncBanner({ status, engramaName }) {
       <span>Acceso denegado por el profesor — el estudio offline sigue disponible</span>
     </div>`
   return ''
+}
+
+function _studyLabel({ due, newCards }) {
+  if (due >= 20)                 return 'Ponerse al día'  // 2+ sesiones pendientes
+  if (due >= 10)                 return 'Estudiar'        // 1 sesión completa
+  if (newCards > 0 && due < 10)  return 'Explorar'        // sesión corta con tarjetas nuevas
+  return 'Repasar'                                        // sesión corta solo repasos
 }
 
 function escapeHtml(str) {

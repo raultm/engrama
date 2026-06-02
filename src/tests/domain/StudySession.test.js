@@ -7,58 +7,143 @@ function makeCard(id) {
 }
 
 function makeSession(cards = [makeCard('c1'), makeCard('c2')]) {
-  return new StudySession({
-    id: 'sess-1',
-    collectionId: 'col-1',
-    schedulerType: 'sm2',
-    cards,
-  })
+  return new StudySession({ id: 'sess-1', collectionId: 'col-1', schedulerType: 'sm2', cards })
 }
 
-describe('StudySession', () => {
-  it('currentCard returns first card initially', () => {
-    const session = makeSession()
-    expect(session.currentCard.id).toBe('c1')
+// ── Estado básico ─────────────────────────────────────────────────────────
+
+describe('StudySession — estado básico', () => {
+  it('currentCard devuelve la primera tarjeta de la cola', () => {
+    expect(makeSession().currentCard.id).toBe('c1')
   })
 
-  it('isFinished is false when cards remain', () => {
+  it('isFinished es false cuando quedan tarjetas', () => {
     expect(makeSession().isFinished).toBe(false)
   })
 
-  it('isFinished is true when no cards', () => {
+  it('isFinished es true con cola vacía', () => {
     expect(makeSession([]).isFinished).toBe(true)
   })
 
-  it('progress starts at 0', () => {
+  it('progress empieza en 0', () => {
     expect(makeSession().progress).toBe(0)
   })
+})
 
-  it('recordResult advances currentIndex', () => {
-    const session = makeSession()
-    const updated = session.recordResult('c1', 3, makeCard('c1'), 10)
-    expect(updated.currentCard.id).toBe('c2')
-    expect(updated.currentIndex).toBe(1)
+// ── Progress y doneCount ──────────────────────────────────────────────────
+
+describe('StudySession — progress y doneCount', () => {
+  it('progress avanza al masterizar una tarjeta (rating ≥ 2)', () => {
+    const s = makeSession([makeCard('c1'), makeCard('c2')])
+    const updated = s.recordResult('c1', 3, makeCard('c1'), 10)
+    expect(updated.progress).toBeCloseTo(0.5)
   })
 
-  it('session completes after last card', () => {
-    const session = makeSession([makeCard('c1')])
-    const updated = session.recordResult('c1', 3, makeCard('c1'), 10)
+  it('progress avanza cuando se agotan los reintentos de una tarjeta olvidada', () => {
+    // MAX_REQUEUE = 2: c1 puede re-encolarse como máximo 2 veces.
+    // Hay que conducir la cola en orden real para que el test sea correcto.
+    const cards = [makeCard('c1'), makeCard('c2'), makeCard('c3'), makeCard('c4')]
+    let s = makeSession(cards)
+
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // falla 1ª → re-encola
+    expect(s.doneCount).toBe(0)
+
+    s = s.recordResult('c2', 3, makeCard('c2'),  10) // c2 pasa
+    s = s.recordResult('c3', 3, makeCard('c3'),  10) // c3 pasa
+
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // falla 2ª → re-encola
+
+    s = s.recordResult('c4', 3, makeCard('c4'),  10) // c4 pasa
+
+    // 3ª falla de c1: requeueCount ya es 2 (= MAX_REQUEUE) → ya NO se re-encola
+    s = s.recordResult('c1', 0, makeCard('c1'), -10)
+    expect(s.doneCount).toBe(4)   // todas las tarjetas procesadas
+    expect(s.isFinished).toBe(true)
+    expect(s.progress).toBe(1)
+  })
+
+  it('masteredCount solo cuenta tarjetas con rating ≥ 2', () => {
+    let s = makeSession([makeCard('c1'), makeCard('c2'), makeCard('c3')])
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // olvidada
+    s = s.recordResult('c2', 1, makeCard('c2'),  -3) // difícil
+    s = s.recordResult('c3', 3, makeCard('c3'),  12) // perfecta
+    expect(s.masteredCount).toBe(1) // solo c3
+  })
+
+  it('masteredCount de-duplica si la misma tarjeta se contesta varias veces', () => {
+    const cards = [makeCard('c1'), makeCard('c2'), makeCard('c3')]
+    let s = makeSession(cards)
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // falla → re-encola
+    s = s.recordResult('c2', 3, makeCard('c2'),  10)
+    s = s.recordResult('c1', 3, makeCard('c1'),   8) // la misma tarjeta, bien al segundo intento
+    expect(s.masteredCount).toBe(2) // c1 y c2, no 3
+  })
+
+  it('progress llega a 1 cuando la sesión termina', () => {
+    const cards = [makeCard('c1'), makeCard('c2')]
+    let s = makeSession(cards)
+    s = s.recordResult('c1', 3, makeCard('c1'), 10)
+    s = s.recordResult('c2', 3, makeCard('c2'), 10)
+    expect(s.progress).toBe(1)
+    expect(s.isFinished).toBe(true)
+  })
+})
+
+// ── Lógica de re-encola ───────────────────────────────────────────────────
+
+describe('StudySession — re-encola', () => {
+  it('re-encola tras rating 0 cuando hay reintentos disponibles', () => {
+    const cards = [makeCard('c1'), makeCard('c2'), makeCard('c3')]
+    const s = makeSession(cards)
+    const updated = s.recordResult('c1', 0, makeCard('c1'), -10)
+    // c1 debería volver a aparecer pronto en la cola
+    expect(updated.queue.some(c => c.id === 'c1')).toBe(true)
+  })
+
+  it('NO re-encola cuando rating ≥ 2', () => {
+    const s = makeSession()
+    const updated = s.recordResult('c1', 2, makeCard('c1'), 5)
+    expect(updated.queue.some(c => c.id === 'c1')).toBe(false)
+  })
+
+  it('inserta la re-encolada cerca del frente (posición ≤ 2)', () => {
+    const cards = [makeCard('c1'), makeCard('c2'), makeCard('c3'), makeCard('c4'), makeCard('c5')]
+    const s = makeSession(cards)
+    const updated = s.recordResult('c1', 0, makeCard('c1'), -10)
+    // c1 debe estar en posición 0, 1 o 2 de la nueva cola
+    const pos = updated.queue.findIndex(c => c.id === 'c1')
+    expect(pos).toBeGreaterThanOrEqual(0)
+    expect(pos).toBeLessThanOrEqual(2)
+  })
+
+  it('NO re-encola cuando la cola queda vacía', () => {
+    const s = makeSession([makeCard('c1')])
+    const updated = s.recordResult('c1', 0, makeCard('c1'), -10)
     expect(updated.isFinished).toBe(true)
+  })
+})
+
+// ── Completado y resumen ──────────────────────────────────────────────────
+
+describe('StudySession — completado y resumen', () => {
+  it('transiciona a COMPLETED al procesar la última tarjeta', () => {
+    const s = makeSession([makeCard('c1')])
+    const updated = s.recordResult('c1', 3, makeCard('c1'), 10)
     expect(updated.status).toBe(SessionStatus.COMPLETED)
     expect(updated.completedAt).not.toBeNull()
   })
 
-  it('getSummary counts ratings correctly', () => {
-    let session = makeSession([makeCard('c1'), makeCard('c2'), makeCard('c3'), makeCard('c4')])
-    session = session.recordResult('c1', 0, makeCard('c1'), -10)
-    session = session.recordResult('c2', 1, makeCard('c2'), -3)
-    session = session.recordResult('c3', 2, makeCard('c3'), 5)
-    session = session.recordResult('c4', 3, makeCard('c4'), 12)
-    const summary = session.getSummary()
-    expect(summary.forgotten).toBe(1)
-    expect(summary.hard).toBe(1)
-    expect(summary.good).toBe(1)
-    expect(summary.perfect).toBe(1)
-    expect(summary.totalEloChange).toBe(4)
+  it('getSummary cuenta cada calificación correctamente', () => {
+    let s = makeSession([makeCard('c1'), makeCard('c2'), makeCard('c3'), makeCard('c4')])
+    s = s.recordResult('c1', 0, makeCard('c1'), -10)
+    s = s.recordResult('c2', 1, makeCard('c2'),  -3)
+    s = s.recordResult('c3', 2, makeCard('c3'),   5)
+    s = s.recordResult('c4', 3, makeCard('c4'),  12)
+    const sum = s.getSummary()
+    expect(sum.forgotten).toBe(1)
+    expect(sum.hard).toBe(1)
+    expect(sum.good).toBe(1)
+    expect(sum.perfect).toBe(1)
+    expect(sum.totalEloChange).toBe(4)
   })
 })

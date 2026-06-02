@@ -539,41 +539,55 @@ kbd {
 
 /* Counters */
 .counters-section {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
   width: 100%;
 }
 
 .counter {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px 12px;
+  position: relative;
+  padding: 0 20px;
   text-align: center;
+  cursor: default;
 }
 
-.counter--due { border-color: rgba(108,99,255,0.4); }
+.counter + .counter {
+  border-left: 1px solid var(--color-border);
+}
 
 .counter__number {
   display: block;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1;
-  margin-bottom: 4px;
 }
 
 .counter--due .counter__number { color: var(--color-primary); }
 .counter--new .counter__number { color: var(--color-perfect); }
-.counter--notdue .counter__number { color: var(--color-text-muted); }
-.counter--total .counter__number { color: var(--color-text-muted); }
 
-.counter__label {
-  display: block;
+/* Tooltip */
+.counter[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-bg);
   font-size: 11px;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.counter[data-label]:hover::after {
+  opacity: 1;
 }
 
 /* Study CTA */

@@ -1,3 +1,5 @@
+import { getRankProgress } from '../ranks.js'
+
 export class UserProfile {
   constructor({
     id = 1,
@@ -34,13 +36,7 @@ export class UserProfile {
     })
   }
 
-  getLevel() {
-    return Math.max(1, Math.floor((this.eloRating - 1500) / 100) + 1)
-  }
-
   getLevelProgress() {
-    if (this.eloRating <= 1500) return 0
-    const base = 1500 + (this.getLevel() - 1) * 100
-    return (this.eloRating - base) / 100
+    return getRankProgress(this.eloRating)
   }
 }

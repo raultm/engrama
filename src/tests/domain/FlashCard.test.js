@@ -71,4 +71,38 @@ describe('FlashCard', () => {
     expect(makeCard({ isUnlocked: 1 }).isUnlocked).toBe(true)
     expect(makeCard({ isUnlocked: 0 }).isUnlocked).toBe(false)
   })
+
+  // ── Tipos de tarjeta y extraData ─────────────────────────────────────────
+
+  it('cardType por defecto es "basic"', () => {
+    expect(makeCard().cardType).toBe('basic')
+  })
+
+  it('cardType falsy cae a "basic"', () => {
+    expect(makeCard({ cardType: null }).cardType).toBe('basic')
+    expect(makeCard({ cardType: ''   }).cardType).toBe('basic')
+  })
+
+  it('preserva cardType cuando se proporciona', () => {
+    expect(makeCard({ cardType: 'cloze'           }).cardType).toBe('cloze')
+    expect(makeCard({ cardType: 'image_occlusion' }).cardType).toBe('image_occlusion')
+  })
+
+  it('extraData por defecto es objeto vacío', () => {
+    expect(makeCard().extraData).toEqual({})
+  })
+
+  it('parsea extraData desde JSON string (como llega de SQLite)', () => {
+    const card = makeCard({ extraData: '{"clozeIndex":2}' })
+    expect(card.extraData).toEqual({ clozeIndex: 2 })
+  })
+
+  it('preserva extraData complejo a través de update()', () => {
+    const masks = [{ id: '0', type: 'rect', x: 0.1, y: 0.2, w: 0.3, h: 0.4 }]
+    const card = makeCard({ cardType: 'image_occlusion', extraData: { imageId: 'img-1', masks } })
+    const updated = card.update({ frontText: 'nuevo' })
+    expect(updated.extraData.imageId).toBe('img-1')
+    expect(updated.extraData.masks).toHaveLength(1)
+    expect(updated.cardType).toBe('image_occlusion')
+  })
 })
