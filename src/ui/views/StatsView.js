@@ -6,6 +6,7 @@ import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engrama
 
 export function StatsView(rootEl) {
   const { studySessionService, userProfileRepository, studySessionRepository } = getContainer()
+  const deadline = studySessionService.getMasterDeadline()
   const profile = userProfileRepository.getOrCreate()
   const stats = studySessionService.getAllCardsStats()
   const sessions = studySessionRepository.findCompleted()
@@ -82,6 +83,14 @@ export function StatsView(rootEl) {
             Importar archivo de datos (.apkg / .json / .md)
             <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
           </label>
+          <div class="deadline-section">
+            <label class="deadline-label" for="deadline-input">Fecha límite del temario</label>
+            <input type="date" id="deadline-input" class="deadline-input"
+              value="${deadline ? deadline.toISOString().slice(0,10) : ''}"
+              min="${new Date().toISOString().slice(0,10)}">
+            ${deadline ? `<button class="deadline-clear" id="btn-clear-deadline">Quitar</button>` : ''}
+          </div>
+
           <button class="btn--danger-full" id="btn-delete-engrama">Eliminar este Engrama</button>
           <button class="btn--danger-full" id="btn-reset" style="opacity:0.6;font-size:12px">Borrar toda la base de datos</button>
         </div>
@@ -91,6 +100,19 @@ export function StatsView(rootEl) {
   `
 
   rootEl.querySelector('#btn-back').addEventListener('click', () => navigate('/'))
+
+  rootEl.querySelector('#deadline-input').addEventListener('change', (e) => {
+    const val = e.target.value
+    if (val) {
+      studySessionService.setMasterDeadline(new Date(val + 'T23:59:59'))
+    }
+    StatsView(rootEl)
+  })
+
+  rootEl.querySelector('#btn-clear-deadline')?.addEventListener('click', () => {
+    studySessionService.setMasterDeadline(null)
+    StatsView(rootEl)
+  })
 
   rootEl.querySelector('#btn-delete-engrama').addEventListener('click', async () => {
     const activeId = getActiveId()

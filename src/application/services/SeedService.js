@@ -5,11 +5,12 @@ import { MarkdownSeedParser } from './MarkdownSeedParser.js'
 const parser = new MarkdownSeedParser()
 
 export class SeedService {
-  constructor({ db, collectionRepository, flashCardRepository, userProfileRepository }) {
+  constructor({ db, collectionRepository, flashCardRepository, userProfileRepository, studySessionService }) {
     this._db = db
     this._collectionRepo = collectionRepository
     this._cardRepo = flashCardRepository
     this._profileRepo = userProfileRepository
+    this._studySessionService = studySessionService
   }
 
   async seedFromRegistry(entry) {
@@ -24,6 +25,7 @@ export class SeedService {
       this._importCollection(colData, null)
     }
     this._db.markSeeded()
+    this._studySessionService?.setDefaultDeadlineIfMissing()
     return true
   }
 

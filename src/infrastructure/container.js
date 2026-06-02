@@ -24,6 +24,7 @@ export async function initContainer(engramaId = 'default') {
   const collectionService = new CollectionService({ collectionRepository })
   const flashCardService = new FlashCardService({ flashCardRepository })
   const studySessionService = new StudySessionService({
+    db,
     collectionRepository,
     flashCardRepository,
     userProfileRepository,
@@ -34,6 +35,7 @@ export async function initContainer(engramaId = 'default') {
     collectionRepository,
     flashCardRepository,
     userProfileRepository,
+    studySessionService,
   })
 
   const syncService = new SyncService({ studySessionRepository })
@@ -43,6 +45,7 @@ export async function initContainer(engramaId = 'default') {
     collectionRepository,
     flashCardRepository,
     userProfileRepository,
+    studySessionService,
   })
 
   container = {

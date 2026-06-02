@@ -3,12 +3,32 @@ import { schedulerRegistry } from '../../domain/schedulers/SchedulerRegistry.js'
 import { eloSystem } from '../../domain/elo/EloSystem.js'
 import { generateId } from '../../infrastructure/utils/generateId.js'
 
+const DEADLINE_KEY        = 'master_deadline'
+const DEFAULT_DEADLINE_MS = 7 * 24 * 3_600_000   // 1 semana
+
 export class StudySessionService {
-  constructor({ collectionRepository, flashCardRepository, userProfileRepository, studySessionRepository }) {
+  constructor({ db, collectionRepository, flashCardRepository, userProfileRepository, studySessionRepository }) {
+    this._db          = db
     this._collectionRepo = collectionRepository
     this._cardRepo = flashCardRepository
     this._profileRepo = userProfileRepository
     this._sessionRepo = studySessionRepository
+  }
+
+  getMasterDeadline() {
+    const val = this._db.getSetting(DEADLINE_KEY)
+    return val ? new Date(val) : null
+  }
+
+  setMasterDeadline(date) {
+    this._db.setSetting(DEADLINE_KEY, date instanceof Date ? date.toISOString() : date)
+  }
+
+  setDefaultDeadlineIfMissing() {
+    if (!this._db.getSetting(DEADLINE_KEY)) {
+      const deadline = new Date(Date.now() + DEFAULT_DEADLINE_MS)
+      this.setMasterDeadline(deadline)
+    }
   }
 
   startGlobalSession() {
@@ -46,6 +66,15 @@ export class StudySessionService {
       .map(([elo, count]) => ({ elo: Number(elo), count }))
       .sort((a, b) => a.elo - b.elo)
 
+    // Próxima revisión programada entre las tarjetas que aún no son exigibles
+    const upcoming = unlocked.filter(c => !c.isDue(now) && c.schedulerData?.nextReview)
+    const nextReviewAt = upcoming.length > 0
+      ? upcoming.reduce((min, c) => {
+          const t = new Date(c.schedulerData.nextReview)
+          return (!min || t < min) ? t : min
+        }, null)
+      : null
+
     return {
       total: allCards.length,
       due: unlocked.filter(c => c.isDue(now)).length,
@@ -55,6 +84,8 @@ export class StudySessionService {
       lockedCount: locked.length,
       nextUnlockElo: lockedMilestones[0]?.elo ?? null,
       lockedMilestones,
+      nextReviewAt,
+      masterDeadline: this.getMasterDeadline(),
     }
   }
 
@@ -65,7 +96,9 @@ export class StudySessionService {
     const scheduler = schedulerRegistry.get(session.schedulerType)
     const profile = this._profileRepo.getOrCreate()
 
-    const { schedulerData } = scheduler.processAnswer(card, rating)
+    const deadline    = this.getMasterDeadline()
+    const deadlineMs  = deadline ? deadline.getTime() : null
+    const { schedulerData } = scheduler.processAnswer(card, rating, new Date(), deadlineMs)
     const { userDelta, cardDelta, newUserElo, newCardElo } =
       eloSystem.calculateChange(profile.eloRating, card.eloDifficulty, rating)
 

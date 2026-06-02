@@ -121,4 +121,110 @@ describe('SM2Scheduler', () => {
       expect(selected[0].id).toBe('review')
     })
   })
+
+  // ── Intervalos adaptativos con fecha límite ───────────────────────────────
+
+  describe('processAnswer — intervalos Olvidada/Difícil con fecha límite', () => {
+    const card = makeCard('c1')
+    const now  = new Date('2024-06-01T10:00:00Z')
+
+    function deadlineIn(hours) {
+      return now.getTime() + hours * 3_600_000
+    }
+
+    function hoursUntil(nextReview) {
+      return (new Date(nextReview) - now) / 3_600_000
+    }
+
+    // ── Sin fecha límite: valores fijos ───────────────────────────────────
+
+    it('Olvidada sin fecha límite → 4 horas exactas', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 0, now, null)
+      expect(hoursUntil(schedulerData.nextReview)).toBeCloseTo(4)
+    })
+
+    it('Difícil sin fecha límite → 8 horas exactas', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 1, now, null)
+      expect(hoursUntil(schedulerData.nextReview)).toBeCloseTo(8)
+    })
+
+    // ── Con fecha límite lejana: techo máximo activo ──────────────────────
+
+    it('Olvidada con plazo lejano (30 días) → techo de 4 h', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 0, now, deadlineIn(720))
+      expect(hoursUntil(schedulerData.nextReview)).toBeCloseTo(4)
+    })
+
+    it('Difícil con plazo lejano (30 días) → techo de 12 h', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 1, now, deadlineIn(720))
+      expect(hoursUntil(schedulerData.nextReview)).toBeCloseTo(12)
+    })
+
+    // ── Con fecha límite próxima: intervalo se comprime ───────────────────
+
+    it('Olvidada con plazo de 1 día → intervalo < 4 h', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 0, now, deadlineIn(24))
+      const h = hoursUntil(schedulerData.nextReview)
+      expect(h).toBeLessThan(4)
+      expect(h).toBeGreaterThan(0)
+    })
+
+    it('Difícil con plazo de 1 día → intervalo < 12 h y < plazo total', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 1, now, deadlineIn(24))
+      const h = hoursUntil(schedulerData.nextReview)
+      expect(h).toBeLessThan(12)
+      expect(h).toBeGreaterThan(0)
+    })
+
+    it('Olvidada con 3 días de plazo → escalada proporcional (< techo)', () => {
+      // 72h / 20 = 3.6h < 4h → usa valor escalado
+      const { schedulerData } = scheduler.processAnswer(card, 0, now, deadlineIn(72))
+      expect(hoursUntil(schedulerData.nextReview)).toBeCloseTo(3.6, 1)
+    })
+
+    // ── Techo mínimo ──────────────────────────────────────────────────────
+
+    it('Olvidada con plazo muy corto → mínimo 30 minutos', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 0, now, deadlineIn(1))
+      expect(hoursUntil(schedulerData.nextReview)).toBeGreaterThanOrEqual(0.5)
+    })
+
+    // ── Buena/Perfecta no afectadas por el deadline ───────────────────────
+
+    it('Buena con fecha límite → sigue usando días, no pocas horas (SM2 normal)', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 2, now, deadlineIn(72))
+      // nextReview es al día siguiente a medianoche — siempre más de 10h desde las 10:00 UTC
+      const h = hoursUntil(schedulerData.nextReview)
+      expect(h).toBeGreaterThan(10)
+    })
+
+    it('Perfecta con fecha límite → sigue usando días, no pocas horas (SM2 normal)', () => {
+      const { schedulerData } = scheduler.processAnswer(card, 3, now, deadlineIn(72))
+      const h = hoursUntil(schedulerData.nextReview)
+      expect(h).toBeGreaterThan(10)
+    })
+  })
+
+  // ── Normalización a medianoche ────────────────────────────────────────────
+
+  describe('processAnswer — normalización a medianoche para Buena/Perfecta', () => {
+    it('Buena programa la revisión a las 00:00 del día siguiente', () => {
+      const now = new Date('2024-06-01T14:30:00')
+      const card = makeCard('c1')
+      const { schedulerData } = scheduler.processAnswer(card, 2, now)
+      const next = new Date(schedulerData.nextReview)
+      expect(next.getHours()).toBe(0)
+      expect(next.getMinutes()).toBe(0)
+      expect(next.getSeconds()).toBe(0)
+    })
+
+    it('Olvidada NO normaliza a medianoche (es intra-día)', () => {
+      const now = new Date('2024-06-01T10:00:00')
+      const card = makeCard('c1')
+      const { schedulerData } = scheduler.processAnswer(card, 0, now)
+      // Debe ser ~14:00, no medianoche
+      const next = new Date(schedulerData.nextReview)
+      expect(next.getHours()).toBeGreaterThan(0)
+    })
+  })
 })

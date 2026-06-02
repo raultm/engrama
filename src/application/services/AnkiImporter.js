@@ -9,11 +9,12 @@ async function getSqlJs() {
 }
 
 export class AnkiImporter {
-  constructor({ db, collectionRepository, flashCardRepository, userProfileRepository }) {
+  constructor({ db, collectionRepository, flashCardRepository, userProfileRepository, studySessionService }) {
     this._db = db
     this._collectionRepo = collectionRepository
     this._cardRepo = flashCardRepository
     this._profileRepo = userProfileRepository
+    this._studySessionService = studySessionService
   }
 
   async importApkg(file) {
@@ -182,6 +183,8 @@ export class AnkiImporter {
     }
 
     this._db.markSeeded()
+    // Fecha límite por defecto: 1 semana desde la importación (el usuario la puede cambiar)
+    this._studySessionService?.setDefaultDeadlineIfMissing()
 
     return { deckCount: finalDecks.length, cardCount: totalCards }
   }

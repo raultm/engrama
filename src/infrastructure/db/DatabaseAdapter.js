@@ -129,6 +129,15 @@ export class DatabaseAdapter {
     }
   }
 
+  getSetting(key, defaultValue = null) {
+    const row = this.queryOne(`SELECT value FROM settings WHERE key = ?`, [key])
+    return row ? row.value : defaultValue
+  }
+
+  setSetting(key, value) {
+    this.run(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`, [key, String(value)])
+  }
+
   isSeeded() {
     const row = this.queryOne(`SELECT value FROM settings WHERE key = 'seeded'`)
     return row?.value === 'true'

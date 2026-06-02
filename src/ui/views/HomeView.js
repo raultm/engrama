@@ -95,8 +95,9 @@ export function HomeView(rootEl) {
           >
             ${canStudy ? _studyLabel(stats) : '✓ Al día por hoy'}
           </button>
-          ${!canStudy && stats.total > 0 ? `<p class="cta-hint">Vuelve mañana para continuar</p>` : ''}
+          ${!canStudy && stats.total > 0 ? `<p class="cta-hint">${_nextReviewHint(stats)}</p>` : ''}
           ${stats.total === 0 ? `<p class="cta-hint">No hay tarjetas cargadas</p>` : ''}
+          ${stats.masterDeadline ? `<p class="cta-hint cta-hint--deadline">${_deadlineHint(stats.masterDeadline)}</p>` : ''}
         </section>
 
       </main>
@@ -147,6 +148,29 @@ function _syncBanner({ status, engramaName }) {
       <span>Acceso denegado por el profesor — el estudio offline sigue disponible</span>
     </div>`
   return ''
+}
+
+function _nextReviewHint({ nextReviewAt }) {
+  if (!nextReviewAt) return 'Vuelve mañana para continuar'
+  const now = new Date()
+  const diffMs = nextReviewAt - now
+  if (diffMs <= 0) return 'Vuelve pronto'
+  const diffH = diffMs / 3_600_000
+  if (diffH < 1) {
+    const min = Math.ceil(diffMs / 60_000)
+    return `Próxima revisión en ${min} min`
+  }
+  if (diffH < 24) {
+    return `Próxima revisión a las ${nextReviewAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  return `Próxima revisión mañana`
+}
+
+function _deadlineHint(deadline) {
+  const days = Math.ceil((deadline - Date.now()) / 86_400_000)
+  if (days <= 0) return 'Fecha límite alcanzada'
+  if (days === 1) return 'Fecha límite: mañana'
+  return `Fecha límite: ${days} días`
 }
 
 function _studyLabel({ due, newCards }) {
