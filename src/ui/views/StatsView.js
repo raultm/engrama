@@ -2,6 +2,7 @@ import { getContainer } from '../../infrastructure/container.js'
 import { navigate } from '../router.js'
 import { showConfirm } from '../components/ConfirmModal.js'
 import { getRank } from '../../domain/ranks.js'
+import { showDeadlineModal } from '../components/DeadlineModal.js'
 import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engramaRegistry.js'
 
 export function StatsView(rootEl) {
@@ -140,19 +141,23 @@ export function StatsView(rootEl) {
     if (!file) return
 
     try {
+      const container = getContainer()
+
       if (file.name.endsWith('.apkg')) {
-        const { ankiImporter } = getContainer()
-        await ankiImporter.importApkg(file)
+        await container.ankiImporter.importApkg(file)
+        const deadline = await showDeadlineModal()
+        if (deadline) container.studySessionService.setMasterDeadline(deadline)
         location.reload()
         return
       }
 
       const format = file.name.endsWith('.md') ? 'markdown' : 'json'
       const text = await file.text()
-      const { seedService } = getContainer()
-      const result = await seedService.importFile(text, format)
+      const result = await container.seedService.importFile(text, format)
 
       if (result.replaced) {
+        const deadline = await showDeadlineModal()
+        if (deadline) container.studySessionService.setMasterDeadline(deadline)
         location.reload()
       } else {
         await showConfirm({

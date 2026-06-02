@@ -25,7 +25,6 @@ export class SeedService {
       this._importCollection(colData, null)
     }
     this._db.markSeeded()
-    this._studySessionService?.setDefaultDeadlineIfMissing()
     return true
   }
 

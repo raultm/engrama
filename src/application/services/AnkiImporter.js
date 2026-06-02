@@ -183,9 +183,6 @@ export class AnkiImporter {
     }
 
     this._db.markSeeded()
-    // Fecha límite por defecto: 1 semana desde la importación (el usuario la puede cambiar)
-    this._studySessionService?.setDefaultDeadlineIfMissing()
-
     return { deckCount: finalDecks.length, cardCount: totalCards }
   }
 

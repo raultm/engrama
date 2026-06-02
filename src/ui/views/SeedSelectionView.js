@@ -1,6 +1,15 @@
 import { initContainer } from '../../infrastructure/container.js'
 import { getRegistry, registerEngrama, setActiveId, getActiveId } from '../engramaRegistry.js'
 import { JoinClassView } from './JoinClassView.js'
+import { showDeadlineModal } from '../components/DeadlineModal.js'
+
+async function finishImport(container, engramaId, name) {
+  registerEngrama(engramaId, name)
+  setActiveId(engramaId)
+  const deadline = await showDeadlineModal()
+  if (deadline) container.studySessionService.setMasterDeadline(deadline)
+  location.reload()
+}
 
 export function SeedSelectionView(rootEl, seedRegistry) {
   const installedIds = new Set(getRegistry().map(e => e.id))
@@ -100,9 +109,7 @@ export function SeedSelectionView(rootEl, seedRegistry) {
       const file = new File([blob], 'test-atmosfera.apkg', { type: 'application/zip' })
       const container = await initContainer(DEMO_ID)
       await container.ankiImporter.importApkg(file)
-      registerEngrama(DEMO_ID, 'Demo — Capas de la Atmósfera')
-      setActiveId(DEMO_ID)
-      location.reload()
+      await finishImport(container, DEMO_ID, 'Demo — Capas de la Atmósfera')
     } catch (err) {
       badge.textContent = 'Error'
       console.error('Demo import error:', err)
@@ -133,24 +140,16 @@ export function SeedSelectionView(rootEl, seedRegistry) {
       const container = await initContainer(engramaId)
 
       if (file.name.endsWith('.apkg')) {
-        const result = await container.ankiImporter.importApkg(file)
-        const roots = container.collectionRepository.findRoots()
-        const name = roots[0]?.name ?? engramaId
-        registerEngrama(engramaId, name)
-        setActiveId(engramaId)
-        location.reload()
-        return
+        await container.ankiImporter.importApkg(file)
+      } else {
+        const format = file.name.endsWith('.md') ? 'markdown' : 'json'
+        const text = await file.text()
+        await container.seedService.importFile(text, format)
       }
-
-      const format = file.name.endsWith('.md') ? 'markdown' : 'json'
-      const text = await file.text()
-      await container.seedService.importFile(text, format)
 
       const roots = container.collectionRepository.findRoots()
       const name = roots[0]?.name ?? engramaId
-      registerEngrama(engramaId, name)
-      setActiveId(engramaId)
-      location.reload()
+      await finishImport(container, engramaId, name)
     } catch (err) {
       badge.textContent = 'Error'
       console.error('Import error:', err)
@@ -179,9 +178,7 @@ export function SeedSelectionView(rootEl, seedRegistry) {
       }
 
       await container.seedService.seedFromRegistry(entry)
-      registerEngrama(entry.id, entry.name)
-      setActiveId(entry.id)
-      location.reload()
+      await finishImport(container, entry.id, entry.name)
     } catch (err) {
       console.error('Error al instalar el mazo:', err)
       btn.disabled = false

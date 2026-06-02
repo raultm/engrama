@@ -1366,6 +1366,10 @@ kbd {
 .confirm-modal { max-width: 360px; }
 .confirm-modal__message { font-size: 14px; color: var(--color-text-muted); margin-top: -12px; margin-bottom: 24px; line-height: 1.6; }
 
+.deadline-modal { max-width: 380px; }
+.deadline-modal__desc { font-size: 14px; color: var(--color-text-muted); margin-top: -12px; margin-bottom: 20px; line-height: 1.6; }
+.deadline-modal__input { width: 100%; margin-bottom: 24px; }
+
 .btn--confirm-danger {
   background: rgba(255,92,92,0.15);
   color: var(--color-forgotten);

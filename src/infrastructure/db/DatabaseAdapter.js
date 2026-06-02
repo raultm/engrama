@@ -135,7 +135,11 @@ export class DatabaseAdapter {
   }
 
   setSetting(key, value) {
-    this.run(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`, [key, String(value)])
+    if (value == null) {
+      this.run(`DELETE FROM settings WHERE key = ?`, [key])
+    } else {
+      this.run(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`, [key, String(value)])
+    }
   }
 
   isSeeded() {
