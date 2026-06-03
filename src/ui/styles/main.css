@@ -975,6 +975,15 @@ body.study-active #app {
   margin-bottom: 12px;
 }
 
+/* Imágenes dentro de tarjetas básicas (importadas de Anki) */
+.flashcard__content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  display: block;
+  margin: 8px auto;
+}
+
 .flashcard__content {
   font-size: 20px;
   line-height: 1.5;

@@ -198,13 +198,13 @@ export class AnkiImporter {
     if (modelType === 1) {
       return this._convertCloze(noteId, fieldMap, tags, cardList)
     }
-    return this._convertStandard(noteId, model, fieldMap, tags, cardList)
+    return this._convertStandard(noteId, model, fieldMap, tags, cardList, mediaCache)
   }
 
-  _convertStandard(noteId, model, fieldMap, tags, cardList) {
+  _convertStandard(noteId, model, fieldMap, tags, cardList, mediaCache = {}) {
     const fieldNames = model.flds.map(f => f.name)
-    const f0 = _stripHtml(fieldMap[fieldNames[0]] ?? '') || '(sin texto)'
-    const f1 = _stripHtml(fieldMap[fieldNames[1]] ?? '') || '(sin texto)'
+    const f0 = _processField(fieldMap[fieldNames[0]] ?? '', mediaCache) || '(sin texto)'
+    const f1 = _processField(fieldMap[fieldNames[1]] ?? '', mediaCache) || '(sin texto)'
     const now = new Date().toISOString()
 
     return cardList.map(({ did, ord }) => ({
@@ -480,6 +480,45 @@ function _stripHtml(html) {
   const d = document.createElement('div')
   d.innerHTML = html
   return (d.textContent || d.innerText || '').trim()
+}
+
+/**
+ * Procesa un campo de nota Anki para uso en tarjetas básicas:
+ * - Sustituye src de <img> por data URLs del mediaCache
+ * - Normaliza <br>
+ * - Elimina scripts y event handlers (seguridad básica)
+ * - Elimina el resto de etiquetas HTML conservando su texto
+ */
+function _processField(html, mediaCache = {}) {
+  if (!html) return ''
+
+  let r = html
+
+  // Eliminar bloques script/style completos
+  r = r.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+
+  // Sustituir <img src="filename"> por una referencia a ImageStore.
+  // La imagen ya se guardará en IndexedDB al final del importApkg;
+  // aquí solo almacenamos la clave para no sobrecargar localStorage.
+  r = r.replace(/<img\b[^>]*>/gi, m => {
+    const src = (m.match(/\bsrc=["']([^"']+)["']/i) ?? [])[1]
+    if (!src || !mediaCache[src]) return ''   // omitir imágenes que no existen en el ZIP
+    return `<img data-anki-src="anki-img-${src}">`
+  })
+
+  // Normalizar <br>
+  r = r.replace(/<br\s*\/?>/gi, '<br>')
+
+  // Eliminar event handlers
+  r = r.replace(/\s+on\w+="[^"]*"/gi, '')
+
+  // Eliminar todas las etiquetas excepto <img> y <br> (ya seguros)
+  r = r.replace(/<(?!\/?(?:img|br)\b)[^>]+>/gi, '')
+
+  // Limpiar entidades HTML de Anki ([sound:...], etc.)
+  r = r.replace(/\[sound:[^\]]*\]/g, '')
+
+  return r.trim()
 }
 
 function _stripHtmlKeepCloze(html) {
