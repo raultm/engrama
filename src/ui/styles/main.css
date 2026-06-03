@@ -846,9 +846,10 @@ kbd {
 /* ===== STUDY VIEW ===== */
 .study-view {
   background: var(--color-bg);
-  height: 100vh;       /* fallback */
-  height: 100dvh;      /* ajusta al viewport visible real en iOS Chrome */
-  min-height: 0;       /* cancela el min-height:100vh heredado de .view */
+  /* position:fixed + inset:0 ancla la vista exactamente al viewport visible,
+     evitando el espacio scroll que generan min-height:100vh en ancestros */
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
 }
@@ -906,17 +907,28 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px 24px max(28px, env(safe-area-inset-bottom));
+  gap: 8px;
+  padding: 12px 24px max(24px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
   background: var(--color-bg);
   position: relative;
 }
 
-/* Wrapper that constrains both reveal button and rating grid to the same width */
-.study-footer > .btn--reveal,
-.study-footer > .rating-buttons {
+/* Contenedor de altura fija: garantiza que la línea de borde no se mueva
+   al alternar entre "Mostrar respuesta" y los 4 botones de calificación */
+.study-footer-btns {
+  width: 100%;
   max-width: 600px;
+  min-height: 52px;
+  display: flex;
+  align-items: stretch;
+}
+
+.study-footer-btns > .btn--reveal,
+.study-footer-btns > .rating-buttons {
+  width: 100%;
+  /* Igualar border a 2px en ambos para que la altura sea idéntica */
+  border-width: 2px;
 }
 
 /* ===== FLASHCARD ===== */

@@ -48,11 +48,13 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
 
       <footer class="study-footer">
         <div class="elo-diff" id="elo-diff" aria-live="polite"></div>
-        <button class="btn btn--primary btn--reveal" id="btn-reveal">Mostrar respuesta</button>
-        <div class="rating-buttons" id="rating-buttons" hidden>
-          ${RATINGS.map(r => `
-            <button class="btn rating-btn ${r.className}" data-rating="${r.value}">${r.label}</button>
-          `).join('')}
+        <div class="study-footer-btns">
+          <button class="btn btn--primary btn--reveal" id="btn-reveal">Mostrar respuesta</button>
+          <div class="rating-buttons" id="rating-buttons" hidden>
+            ${RATINGS.map(r => `
+              <button class="btn rating-btn ${r.className}" data-rating="${r.value}">${r.label}</button>
+            `).join('')}
+          </div>
         </div>
       </footer>
     </div>
