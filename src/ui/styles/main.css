@@ -1107,6 +1107,56 @@ kbd {
   z-index: 1;
 }
 
+/* ===== TSUMEGO CARDS ===== */
+.tsumego-ptm {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+.tsumego-ptm--black { background: #111; color: #fff; }
+.tsumego-ptm--white { background: #f0ece0; color: #333; border: 1px solid #ccc; }
+
+.tsumego-comment {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.tsumego-board {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.tsumego-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 8px 0 0;
+}
+
+.tsumego-answer {
+  text-align: center;
+  font-size: 15px;
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+}
+.tsumego-answer--ok  { color: var(--color-perfect); }
+.tsumego-answer--ko  { color: var(--color-forgotten); }
+
+/* Target clicable en cada intersección vacía del tablero */
+.go-target {
+  cursor: pointer;
+}
+.go-target:hover {
+  fill: rgba(255, 255, 255, 0.25);
+}
+
 .occlusion-answer-label {
   font-size: 22px;
   font-weight: 600;

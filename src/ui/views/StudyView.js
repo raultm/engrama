@@ -79,7 +79,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   window.addEventListener('beforeunload', onUnload)
 
   async function fillCard(c) {
-    await fillCardContent(c, { questionEl, tagsEl: frontTags })
+    await fillCardContent(c, { questionEl, tagsEl: frontTags, onReveal: reveal })
   }
 
   function resetState() {

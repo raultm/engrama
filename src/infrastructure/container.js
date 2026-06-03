@@ -9,6 +9,7 @@ import { StudySessionService } from '../application/services/StudySessionService
 import { SeedService } from '../application/services/SeedService.js'
 import { SyncService } from '../application/services/SyncService.js'
 import { AnkiImporter } from '../application/services/AnkiImporter.js'
+import { SgfImporter } from '../application/services/SgfImporter.js'
 
 let container = null
 
@@ -48,6 +49,13 @@ export async function initContainer(engramaId = 'default') {
     studySessionService,
   })
 
+  const sgfImporter = new SgfImporter({
+    db,
+    collectionRepository,
+    flashCardRepository,
+    userProfileRepository,
+  })
+
   container = {
     db,
     collectionRepository,
@@ -60,6 +68,7 @@ export async function initContainer(engramaId = 'default') {
     seedService,
     syncService,
     ankiImporter,
+    sgfImporter,
   }
 
   return container

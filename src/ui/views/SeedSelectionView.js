@@ -50,14 +50,26 @@ export function SeedSelectionView(rootEl, seedRegistry) {
             </span>
           </button>
 
+          <button class="seed-option seed-option--demo ${installedIds.has('tsumego-basicos') ? 'seed-option--installed' : ''} ${'tsumego-basicos' === activeId ? 'seed-option--active' : ''}"
+            id="btn-demo-tsumego" aria-label="Demo: tsumego de Go">
+            <span class="seed-option__icon">⊕</span>
+            <div class="seed-option__text">
+              <span class="seed-option__name">Demo — Tsumego básicos (Go)</span>
+              <span class="seed-option__desc">7 problemas de vida y muerte</span>
+            </div>
+            <span class="seed-option__badge" id="tsumego-badge">
+              ${'tsumego-basicos' === activeId ? 'Activo' : installedIds.has('tsumego-basicos') ? 'Instalado' : '→'}
+            </span>
+          </button>
+
           <label class="seed-option seed-option--upload" aria-label="Subir archivo propio">
             <span class="seed-option__icon">↑</span>
             <div class="seed-option__text">
               <span class="seed-option__name">Subir archivo</span>
-              <span class="seed-option__desc">Importa tu propio mazo en formato .apkg, .json o .md</span>
+              <span class="seed-option__desc">Importa tu propio mazo en formato .apkg, .sgf, .json o .md</span>
             </div>
             <span class="seed-option__badge seed-option__badge--upload" id="upload-badge">Elegir</span>
-            <input type="file" accept=".apkg,.json,.md" style="display:none" id="file-upload">
+            <input type="file" accept=".apkg,.sgf,.json,.md" style="display:none" id="file-upload">
           </label>
 
           ${seedRegistry.map(entry => {
@@ -117,6 +129,29 @@ export function SeedSelectionView(rootEl, seedRegistry) {
     }
   })
 
+  rootEl.querySelector('#btn-demo-tsumego').addEventListener('click', async () => {
+    const DEMO_ID = 'tsumego-basicos'
+    const badge   = rootEl.querySelector('#tsumego-badge')
+    if (installedIds.has(DEMO_ID)) {
+      setActiveId(DEMO_ID)
+      location.reload()
+      return
+    }
+    badge.textContent = '…'
+    try {
+      const res = await fetch('./seeds/tsumego-basicos.sgf')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      const container = await initContainer(DEMO_ID)
+      container.sgfImporter.importSgf(text, 'tsumego-basicos.sgf')
+      await finishImport(container, DEMO_ID, 'Demo — Tsumego básicos')
+    } catch (err) {
+      badge.textContent = 'Error'
+      console.error('Tsumego demo error:', err)
+      alert(`Error: ${err.message}`)
+    }
+  })
+
   rootEl.querySelector('#btn-back')?.addEventListener('click', () => {
     window.location.hash = '/'
     window.location.reload()
@@ -141,6 +176,9 @@ export function SeedSelectionView(rootEl, seedRegistry) {
 
       if (file.name.endsWith('.apkg')) {
         await container.ankiImporter.importApkg(file)
+      } else if (file.name.endsWith('.sgf')) {
+        const text = await file.text()
+        container.sgfImporter.importSgf(text, file.name)
       } else {
         const format = file.name.endsWith('.md') ? 'markdown' : 'json'
         const text = await file.text()

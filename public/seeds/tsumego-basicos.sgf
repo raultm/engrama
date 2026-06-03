@@ -1,0 +1,47 @@
+(;FF[4]GM[1]SZ[9]C[Negras juegan. La piedra blanca tiene una sola libertad — captúrala.]PL[B]AB[bc][dc][cb]AW[cc]
+(;B[cd]
+C[¡Correcto! La piedra blanca queda sin libertades y es capturada.])
+(;B[aa]
+C[Incorrecto — la blanca aún tiene libertad en C4.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. Encuentra el punto vital para matar el grupo en L de las blancas.]PL[B]AB[ca][ac]AW[aa][ba][ab]
+(;B[bb]
+C[¡Correcto! B2 es el punto vital. El grupo queda sin libertades y muere.])
+(;B[cb]
+C[Incorrecto — las blancas aún pueden hacer ojo en B2.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. El grupo blanco tiene dos libertades. Rellénalas para capturarlo.]PL[B]AB[ba][ca][ea][eb][cc][bc][bb]AW[cb][db]
+(;B[da];B[dc]
+C[¡Correcto! Has capturado las dos piedras blancas.])
+(;B[dc];B[da]
+C[¡También correcto! El orden inverso funciona igual.])
+(;B[ai]
+C[Incorrecto — el grupo blanco escapa.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. El grupo de tres piedras en línea tiene una sola libertad. Captúralo.]PL[B]AB[aa][ea][bb][db]AW[ba][ca][da]
+(;B[cb]
+C[¡Correcto! C2 era la única libertad. Has capturado las tres piedras.])
+(;B[ca]
+C[Incorrecto — C1 ya está ocupado por blancas.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. Cierra las dos libertades del grupo blanco para capturarlo.]PL[B]AB[eb][ed][fb][fd]AW[ec][fc]
+(;B[dc];B[gc]
+C[¡Correcto! Has capturado el grupo de dos piedras.])
+(;B[gc];B[dc]
+C[¡También correcto! El orden inverso funciona igual.])
+(;B[ai]
+C[Incorrecto — las blancas escapan.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. El cuadrado blanco tiene dos libertades. Captúralo en dos movimientos.]PL[B]AB[cd][fd][ce][fe][ec][df][eg][dg][cf][ff]AW[dd][ed][de][ee]
+(;B[dc];B[ef]
+C[¡Correcto! Has capturado el grupo de cuatro piedras.])
+(;B[ef];B[dc]
+C[¡También correcto! El orden inverso funciona igual.])
+(;B[ai]
+C[Incorrecto — el grupo blanco escapa.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. Pon la piedra blanca en atari y cierra la escapada aunque intente huir.]PL[B]AB[de][ef]AW[ee]
+(;B[ed];W[gf];B[fe]
+C[¡Correcto! Has capturado la piedra blanca aunque las blancas intentaran huir.])
+(;B[fe]
+C[Incorrecto — la blanca puede escapar por E4 antes de que la captures.]))
