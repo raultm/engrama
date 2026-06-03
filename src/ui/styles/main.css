@@ -843,13 +843,22 @@ kbd {
   border-color: var(--color-forgotten);
 }
 
+/* body.study-active evita que #app (min-height:100vh) expanda la página
+   más allá del viewport visible, que es lo que genera el scroll extra en móvil */
+body.study-active {
+  overflow: hidden;
+}
+body.study-active #app {
+  overflow: hidden;
+  min-height: 0;
+}
+
 /* ===== STUDY VIEW ===== */
 .study-view {
   background: var(--color-bg);
-  /* position:fixed + inset:0 ancla la vista exactamente al viewport visible,
-     evitando el espacio scroll que generan min-height:100vh en ancestros */
-  position: fixed;
-  inset: 0;
+  height: 100vh;    /* fallback */
+  height: 100dvh;   /* viewport visible real — respeta barra de navegación iOS */
+  min-height: 0;    /* cancela el min-height:100vh heredado de .view */
   display: flex;
   flex-direction: column;
 }

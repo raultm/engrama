@@ -70,7 +70,11 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   const progressFill  = rootEl.querySelector('#progress-fill')
   const progressText  = rootEl.querySelector('#progress-text')
 
+  // Bloquear scroll de la página mientras dura la sesión
+  document.body.classList.add('study-active')
+
   function cleanup() {
+    document.body.classList.remove('study-active')
     window.removeEventListener('beforeunload', onUnload)
     controller.abort()
   }
