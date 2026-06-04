@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from './db/DatabaseAdapter.js'
+import { createDatabaseAdapter } from './db/createDatabaseAdapter.js'
 import { CollectionRepository } from './repositories/CollectionRepository.js'
 import { FlashCardRepository } from './repositories/FlashCardRepository.js'
 import { UserProfileRepository } from './repositories/UserProfileRepository.js'
@@ -14,8 +14,7 @@ import { SgfImporter } from '../application/services/SgfImporter.js'
 let container = null
 
 export async function initContainer(engramaId = 'default') {
-  const db = new DatabaseAdapter(engramaId)
-  await db.init()
+  const db = await createDatabaseAdapter(engramaId)
 
   const collectionRepository = new CollectionRepository(db)
   const flashCardRepository = new FlashCardRepository(db)
