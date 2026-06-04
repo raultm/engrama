@@ -455,6 +455,7 @@ kbd {
   font-size: 14px;
   color: var(--color-text-muted);
   margin-bottom: 8px;
+  text-align: center;
 }
 
 .elo-level strong { color: var(--color-text); }
@@ -535,6 +536,16 @@ kbd {
   justify-content: space-between;
   font-size: 12px;
   color: var(--color-text-muted);
+}
+
+/* Streak */
+.streak-badge {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: 0.03em;
+  margin: 0;
 }
 
 /* Counters */

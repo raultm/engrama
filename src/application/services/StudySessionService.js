@@ -114,12 +114,31 @@ export class StudySessionService {
 
     if (updatedSession.isFinished) {
       updatedProfile = updatedProfile.withSessionCompleted(updatedSession.cards.length)
+      this._updateStreak()
     }
 
     this._profileRepo.save(updatedProfile)
     this._sessionRepo.save(updatedSession, updatedProfile.eloRating)
 
     return { session: updatedSession, userDelta, cardDelta }
+  }
+
+  getStreak() {
+    return parseInt(this._db.getSetting('streak_count') ?? '0')
+  }
+
+  _updateStreak() {
+    const today     = new Date().toISOString().slice(0, 10)
+    const lastDate  = this._db.getSetting('streak_last_date')
+    const current   = parseInt(this._db.getSetting('streak_count') ?? '0')
+
+    if (lastDate === today) return  // ya estudiaste hoy
+
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+    const newStreak = lastDate === yesterday ? current + 1 : 1
+
+    this._db.setSetting('streak_last_date', today)
+    this._db.setSetting('streak_count', String(newStreak))
   }
 
   markAbandoned(sessionId) {

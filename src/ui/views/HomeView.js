@@ -10,7 +10,8 @@ export function HomeView(rootEl) {
   const { studySessionService, userProfileRepository, syncService } = getContainer()
 
   const profile = userProfileRepository.getOrCreate()
-  const stats = studySessionService.getAllCardsStats()
+  const stats   = studySessionService.getAllCardsStats()
+  const streak  = studySessionService.getStreak()
   const canStudy = stats.due > 0
 
   const registry = getRegistry()
@@ -75,6 +76,8 @@ export function HomeView(rootEl) {
             <div class="elo-fill" style="width:${Math.round(profile.getLevelProgress() * 100)}%"></div>
           </div>
         </section>
+
+        ${streak > 3 ? `<p class="streak-badge">${streak} días seguidos</p>` : ''}
 
         ${_syncBanner(syncState)}
 
