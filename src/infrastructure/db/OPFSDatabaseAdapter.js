@@ -16,7 +16,8 @@ import { DatabaseAdapter } from './DatabaseAdapter.js'
 export class OPFSDatabaseAdapter extends DatabaseAdapter {
   constructor(engramaId) {
     super(engramaId)
-    this._opfsFile    = `engrama_${engramaId}.db`
+    this._opfsDir     = engramaId          // carpeta raíz del engrama en OPFS
+    this._opfsFile    = 'db.sqlite'        // BD dentro de esa carpeta
     this._flushTimer  = null
     this._writePromise = null
     this._setupFlushOnHide()
@@ -42,15 +43,20 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
     }
   }
 
+  async _engramaDir(create = false) {
+    const root = await navigator.storage.getDirectory()
+    return root.getDirectoryHandle(this._opfsDir, { create })
+  }
+
   async _readOPFS() {
     try {
-      const root = await navigator.storage.getDirectory()
-      const fh   = await root.getFileHandle(this._opfsFile)
+      const dir  = await this._engramaDir(false)
+      const fh   = await dir.getFileHandle(this._opfsFile)
       const file = await fh.getFile()
       const buf  = await file.arrayBuffer()
       return new Uint8Array(buf)
     } catch {
-      return null   // archivo inexistente = primera vez
+      return null
     }
   }
 
@@ -88,13 +94,12 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
   }
 
   async _writeOPFS(data) {
-    const root     = await navigator.storage.getDirectory()
-    const fh       = await root.getFileHandle(this._opfsFile, { create: true })
+    const dir      = await this._engramaDir(true)
+    const fh       = await dir.getFileHandle(this._opfsFile, { create: true })
     const writable = await fh.createWritable()
     await writable.write(data)
     await writable.close()
 
-    // Primera vez: borrar localStorage migrado
     if (this._migrateFrom) {
       localStorage.removeItem(this._migrateFrom)
       this._migrateFrom = null
@@ -106,9 +111,10 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
   async reset() {
     try {
       const root = await navigator.storage.getDirectory()
-      await root.removeEntry(this._opfsFile)
+      // Eliminar toda la carpeta del engrama (DB + imágenes)
+      await root.removeEntry(this._opfsDir, { recursive: true })
     } catch {}
-    localStorage.removeItem(this._dbKey)  // por si queda rastro
+    localStorage.removeItem(this._dbKey)
   }
 
   // ── Flush en pagehide ─────────────────────────────────────────────────────

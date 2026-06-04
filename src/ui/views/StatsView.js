@@ -127,6 +127,9 @@ export function StatsView(rootEl) {
       dangerous: true,
     })
     if (!ok) return
+    // Borrar BD + imágenes del almacenamiento (OPFS o localStorage)
+    const { db } = getContainer()
+    await db.reset()
     removeEngrama(activeId)
     location.reload()
   })
