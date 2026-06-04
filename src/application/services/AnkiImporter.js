@@ -3,6 +3,7 @@ import { decompress as zstdDecompress } from 'fzstd'
 import { FlashCard } from '../../domain/entities/FlashCard.js'
 import { ImageStore } from '../../infrastructure/db/ImageStore.js'
 import { generateId } from '../../infrastructure/utils/generateId.js'
+import { parseSgf } from '../../domain/sgf/SgfParser.js'
 
 async function getSqlJs() {
   return window.initSqlJs({ locateFile: f => new URL(f, document.baseURI).href })
@@ -198,6 +199,9 @@ export class AnkiImporter {
     if (modelType === 1) {
       return this._convertCloze(noteId, fieldMap, tags, cardList)
     }
+    if (modelName.includes('tsumego')) {
+      return this._convertTsumego(noteId, fieldMap, tags, cardList)
+    }
     return this._convertStandard(noteId, model, fieldMap, tags, cardList, mediaCache)
   }
 
@@ -234,6 +238,36 @@ export class AnkiImporter {
         extraData: { clozeIndex: ord + 1 },
         tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
         schedulerData: {}, prerequisites: [], isUnlocked: true,
+      },
+    }))
+  }
+
+  _convertTsumego(noteId, fieldMap, tags, cardList) {
+    // El campo SGF contiene el texto del problema en formato SGF
+    const sgfText = fieldMap['SGF'] ?? fieldMap['sgf'] ?? Object.values(fieldMap)[0] ?? ''
+    const nombre  = _stripHtml(fieldMap['Nombre'] ?? fieldMap['nombre'] ?? '')
+    if (!sgfText.trim()) return []
+
+    const parsed = parseSgf(sgfText)
+    const now    = new Date().toISOString()
+
+    return cardList.map(({ did, ord }) => ({
+      deckId: did,
+      cardData: {
+        frontText:    nombre || parsed.comment || `Problema ${ord + 1}`,
+        backText:     parsed.correctMoves[0] ?? '',
+        cardType:     'tsumego',
+        extraData: {
+          sgf:          sgfText,
+          boardSize:    parsed.boardSize,
+          blackStones:  parsed.blackStones,
+          whiteStones:  parsed.whiteStones,
+          playerToMove: parsed.playerToMove,
+          correctMoves: parsed.correctMoves,
+          comment:      parsed.comment,
+        },
+        tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
+        schedulerData: {}, prerequisites: [], isUnlocked: _isUnlockedFromTags(tags),
       },
     }))
   }
@@ -459,6 +493,7 @@ function _parseMediaProto(bytes) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
 
 function _eloFromTags(tags) {
   for (const tag of tags) {

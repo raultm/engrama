@@ -58,6 +58,8 @@ Uses an inline SVG overlay (`viewBox="0 0 1 1" preserveAspectRatio="none"`) posi
 
 ELO and lock state can be set via Anki tags: `elo:1600`, `locked`, `locked:true`. Default: ELO 1500, unlocked.
 
+**Tsumego note type**: Anki notes with model name `"Tsumego"` (case-insensitive) are routed to `_convertTsumego`. The `SGF` field must contain raw SGF text. First variation = correct answer. See `docs/anki-import.md` for the full authoring guide.
+
 ### Data flow for study sessions
 
 `StudySessionService.startGlobalSession()` calls `collectionRepository.buildTree()` which loads all cards recursively. Cards are selected by `SM2Scheduler.selectCards()`. The session is a value object (`StudySession`) — `processAnswer()` returns a new session instance. ELO changes affect both the card (`eloDifficulty`) and the user profile (`eloRating`). Cards unlock progressively as user ELO rises.
