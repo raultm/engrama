@@ -41,6 +41,10 @@ export async function fillAnswerContent(card, { questionEl }) {
   if (labelEl) labelEl.textContent = strategy.getLabels().answer
 
   questionEl.innerHTML = await strategy.renderAnswer(card)
+
+  // Hook opcional: permite a estrategias con estado (ej: tsumego) re-enganchar
+  // listeners al DOM tras el reemplazo de innerHTML.
+  strategy.postReveal?.(card, questionEl)
 }
 
 function escapeHtml(str) {

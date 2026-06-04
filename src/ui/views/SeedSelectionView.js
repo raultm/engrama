@@ -8,6 +8,8 @@ async function finishImport(container, engramaId, name) {
   setActiveId(engramaId)
   const deadline = await showDeadlineModal()
   if (deadline) container.studySessionService.setMasterDeadline(deadline)
+  // Esperar a que OPFS termine de escribir antes de recargar
+  if (container.db.flushNow) await container.db.flushNow()
   location.reload()
 }
 
@@ -36,6 +38,18 @@ export function SeedSelectionView(rootEl, seedRegistry) {
               <span class="seed-option__desc">Introduce el código que te dio tu profesor</span>
             </div>
             <span class="seed-option__badge seed-option__badge--upload">Código</span>
+          </button>
+
+          <button class="seed-option seed-option--demo ${installedIds.has('tsumego-ejemplo') ? 'seed-option--installed' : ''} ${'tsumego-ejemplo' === activeId ? 'seed-option--active' : ''}"
+            id="btn-demo-tsumego-md" aria-label="Demo: tsumego desde markdown">
+            <span class="seed-option__icon">⊕</span>
+            <div class="seed-option__text">
+              <span class="seed-option__name">Demo — Tsumego (Markdown)</span>
+              <span class="seed-option__desc">Ejemplo de tsumego importado desde .md (3 problemas)</span>
+            </div>
+            <span class="seed-option__badge" id="tsumego-md-badge">
+              ${'tsumego-ejemplo' === activeId ? 'Activo' : installedIds.has('tsumego-ejemplo') ? 'Instalado' : '→'}
+            </span>
           </button>
 
           <button class="seed-option seed-option--demo ${installedIds.has('test-atmosfera') ? 'seed-option--installed' : ''} ${'test-atmosfera' === activeId ? 'seed-option--active' : ''}"
@@ -126,6 +140,25 @@ export function SeedSelectionView(rootEl, seedRegistry) {
       badge.textContent = 'Error'
       console.error('Demo import error:', err)
       alert(`Error al cargar el demo: ${err.message}`)
+    }
+  })
+
+  rootEl.querySelector('#btn-demo-tsumego-md').addEventListener('click', async () => {
+    const DEMO_ID = 'tsumego-ejemplo'
+    const badge   = rootEl.querySelector('#tsumego-md-badge')
+    if (installedIds.has(DEMO_ID)) { setActiveId(DEMO_ID); location.reload(); return }
+    badge.textContent = '…'
+    try {
+      const res  = await fetch('./seeds/tsumego-ejemplo.md')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      const container = await initContainer(DEMO_ID)
+      await container.seedService.importFile(text, 'markdown')
+      await finishImport(container, DEMO_ID, 'Demo — Tsumego (Markdown)')
+    } catch (err) {
+      badge.textContent = 'Error'
+      console.error('Tsumego MD demo error:', err)
+      alert(`Error: ${err.message}`)
     }
   })
 

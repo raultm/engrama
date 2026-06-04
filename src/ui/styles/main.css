@@ -1175,6 +1175,44 @@ body.study-active #app {
   margin: 4px 0;
 }
 
+/* Barra de navegación review */
+.tsumego-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.tsumego-nav-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition);
+}
+
+.tsumego-nav-btn:hover:not(:disabled) { background: var(--color-secondary); }
+.tsumego-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+.tsumego-nav-pos {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 48px;
+  text-align: center;
+}
+
+.tsumego-result { text-align: center; font-size: 15px; font-weight: 600; margin: 8px 0 0; }
+.tsumego-ok     { color: var(--color-perfect); }
+.tsumego-ko     { color: var(--color-forgotten); }
+
 .tsumego-hint {
   text-align: center;
   font-size: 12px;

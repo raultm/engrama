@@ -35,10 +35,15 @@ export function renderGoBoard({
   boardSize,
   blackStones,
   whiteStones,
-  playerToMove = 'B',
-  markedMoves  = [],
-  interactive  = false,
-  wrongMove    = null,
+  playerToMove  = 'B',
+  markedMoves   = [],      // image occlusion: verde con anillo
+  interactive   = false,
+  wrongMove     = null,    // image occlusion: rojo con anillo
+  // Tsumego annotations:
+  lastMove      = null,    // cuadrado en la última piedra jugada
+  correctMoves  = [],      // círculo verde en intersecciones vacías
+  wrongMoves    = [],      // círculo rojo en intersecciones vacías
+  neutralMoves  = [],      // círculo gris en intersecciones vacías
 }) {
   const N    = boardSize
   // Escalar para que el tablero quepa siempre en ~280px
@@ -109,17 +114,50 @@ export function renderGoBoard({
   })() : ''
 
   // ── Targets interactivos (intersecciones vacías clicables) ────────────────
-  const occupied = new Set([...blackStones, ...whiteStones, ...markedMoves])
+  const occupiedForTargets = new Set([...blackStones, ...whiteStones, ...markedMoves])
   const targetsSvg = interactive
     ? Array.from({ length: N }, (_, c) =>
         Array.from({ length: N }, (_, r) => {
           const coord = String.fromCharCode(97 + c) + String.fromCharCode(97 + r)
-          if (occupied.has(coord)) return ''
+          if (occupiedForTargets.has(coord)) return ''
           const half = CELL / 2
           return `<rect x="${(px(c) - half).toFixed(1)}" y="${(px(r) - half).toFixed(1)}" width="${CELL}" height="${CELL}" fill="transparent" class="go-target" data-move="${coord}"/>`
         }).join('')
       ).join('')
     : ''
+
+  // ── Anotaciones tsumego ─────────────────────────────────────────────────
+  const occupied = new Set([...blackStones, ...whiteStones])
+
+  // Indicador de última jugada: cuadrado pequeño dentro de la piedra
+  const lastMoveSvg = lastMove ? (() => {
+    if (!occupied.has(lastMove)) return ''
+    const { col, row } = sgfToColRow(lastMove)
+    const isBlack = blackStones.includes(lastMove)
+    const side    = R * 0.45
+    return `<rect x="${(px(col) - side/2).toFixed(1)}" y="${(px(row) - side/2).toFixed(1)}"
+                  width="${side.toFixed(1)}" height="${side.toFixed(1)}"
+                  fill="${isBlack ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.45)'}" rx="1"/>`
+  })() : ''
+
+  // Círculos de anotación en intersecciones vacías
+  const annotationSvg = [
+    ...correctMoves.filter(c => !occupied.has(c)).map(c => {
+      const { col, row } = sgfToColRow(c)
+      return `<circle cx="${px(col)}" cy="${px(row)}" r="${R * 0.42}"
+                      fill="${MARK_COLOR}" opacity="0.82"/>`
+    }),
+    ...wrongMoves.filter(c => !occupied.has(c)).map(c => {
+      const { col, row } = sgfToColRow(c)
+      return `<circle cx="${px(col)}" cy="${px(row)}" r="${R * 0.42}"
+                      fill="${WRONG_COLOR}" opacity="0.82"/>`
+    }),
+    ...neutralMoves.filter(c => !occupied.has(c)).map(c => {
+      const { col, row } = sgfToColRow(c)
+      return `<circle cx="${px(col)}" cy="${px(row)}" r="${R * 0.42}"
+                      fill="#94a3b8" opacity="0.7"/>`
+    }),
+  ].join('')
 
   return `<svg viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg"
               style="width:100%;max-width:${SIZE}px;display:block;border-radius:4px"
@@ -130,6 +168,8 @@ export function renderGoBoard({
     ${stonesSvg.join('')}
     ${marksSvg.join('')}
     ${wrongSvg}
+    ${annotationSvg}
+    ${lastMoveSvg}
     ${targetsSvg}
   </svg>`
 }
