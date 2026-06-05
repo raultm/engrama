@@ -199,9 +199,9 @@ function _attachSolve(containerEl, ctrl, onReveal) {
 
     if (ctrl.hasOpponentResponse()) {
       await _delay(350)
-      const opResult = ctrl.playOpponentResponse()
+      ctrl.playOpponentResponse()
       redraw()
-      if (!opResult?.hasMore || ctrl.isSequenceEnd()) {
+      if (ctrl.isSequenceEnd()) {
         await _delay(200); enterReview()
       } else {
         timer.startMove()  // reinicia timer para el siguiente movimiento del jugador

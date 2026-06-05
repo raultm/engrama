@@ -35,21 +35,13 @@ AB[ca][ac]AW[aa][ba][ab]
 
 <!-- cardType:tsumego elo:1500 tags:go,tsumego,esquina,l-group -->
 
-## Dos libertades — rellena ambas
+## Blancas capturan el grupo negro
 
 ```sgf
-(;FF[4]GM[1]SZ[9]
-PL[B]
-C[Negras juegan. El grupo blanco tiene dos libertades. Rellena ambas para capturarlo.]
-AB[ba][ca][eb][ec][cc][bc][bb]AW[cb][db]
-(;B[da]C[Correct! D1 cierra la primera libertad.]
-  ;B[dc]C[Correct! D3 cierra la segunda. El grupo blanco queda capturado.])
-(;B[dc]C[Correct! También funciona empezar por D3.]
-  ;B[da]C[Correct! Y cerrar D1. El grupo blanco capturado.])
-(;B[aa]C[Wrong. El grupo blanco tiene dos libertades libres y escapa fácilmente.]))
+( ;GM[1]SZ[19]PL[W]C[Blancas juegan. Ejecuta la secuencia exacta para capturar el grupo negro.] AB[bj][cj][di][eg][fg][fe][gd][dd][ce][be][cc][gb] AW[bd][ae][bf][cf][df][ch][bi] ;W[bc] ;B[cb] ;W[bb] ;B[ba] ;W[cd] ;B[de] ;W[dc] ;B[da] )
 ```
 
-<!-- cardType:tsumego elo:1600 tags:go,tsumego,secuencia -->
+<!-- cardType:tsumego elo:1700 tags:go,tsumego,captura,secuencia -->
 
 ## Tres en línea — encuentra el punto vital
 
@@ -112,18 +104,21 @@ AW[ba][ca][da][eb][ec][ed][ae][be][ce][de]
 
 <!-- cardType:tsumego elo:1700 tags:go,tsumego,vida,ojos -->
 
-## Red para una piedra en fuga
+## Negras matan el grupo blanco
 
 ```sgf
-(;FF[4]GM[1]SZ[9]
-PL[B]
-C[Negras juegan. La piedra blanca intentará escapar. Coloca la red antes de que lo consiga.]
-AB[de][fe][df][ff][ed]AW[ee][ef]
-(;B[eg]C[Correct! E7 completa la red (geta). La piedra blanca no puede escapar en ninguna dirección.]
-  ;W[dg]C[Las blancas intentan escapar por D7...]
-  ;B[dh]C[Negras cortan. Las blancas están atrapadas definitivamente.])
-(;B[ff]C[Wrong. F6 ya está ocupado por negras.])
-(;B[dg]C[Wrong. Las blancas escapan por E7 y huyen hacia el centro.]))
+( ;FF[4]GM[1]SZ[19]PL[B]C[Negras juegan. Hay varios caminos para matar el grupo blanco — encuentra uno.] AB[bb][cc][db][eb][ed][fc][gc][hb][ib] AW[bc][ca][cb][dc][dd][de][ec][ee][ge][hc][ic][jb][jd]
+  ( ;B[da]C[Correct!] ;W[cd] ;B[fa]C[CORRECT CORRECT!] )
+  ( ;B[fa]C[Correct!] ;W[da]
+    ( ;B[gb]C[CORRECT CORRECT!] )
+    ( ;B[ia]C[WRONG!] )
+  )
+  ( ;B[fb]C[Correct!] ;W[ga] ;B[da] ;W[cd] ;B[fa]C[CORRECT CORRECT!] )
+  ( ;B[ia]C[Correct!] ;W[ga] ;B[da] ;W[cd] ;B[fa]C[CORRECT CORRECT!] )
+  ( ;B[ga]C[WRONG!] )
+  ( ;B[gb]C[WRONG!] )
+  ( ;B[ha]C[WRONG!] )
+)
 ```
 
-<!-- cardType:tsumego elo:1700 tags:go,tsumego,geta,red -->
+<!-- cardType:tsumego elo:1600 tags:go,tsumego,matar,esquina -->
