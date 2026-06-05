@@ -12,6 +12,10 @@ export function HomeView(rootEl) {
   const profile = userProfileRepository.getOrCreate()
   const stats   = studySessionService.getAllCardsStats()
   const streak  = studySessionService.getStreak()
+  const availableTags  = studySessionService.getAvailableTags()
+  const selectedTags   = studySessionService.getSelectedTags()
+  const hasTags        = availableTags.length > 0
+  const hasTagFilter   = selectedTags.length > 0
   const canStudy = stats.due > 0
 
   const registry = getRegistry()
@@ -46,6 +50,13 @@ export function HomeView(rootEl) {
           </select>
         </div>
         <div class="home-header__actions">
+          ${hasTags ? `
+          <button class="btn btn--ghost btn--icon btn--sm ${hasTagFilter ? 'btn--tag-active' : ''}" id="btn-tags" aria-label="Filtrar por tags" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+          </button>` : ''}
           <button class="btn btn--ghost btn--icon btn--sm" id="btn-theme" aria-label="Cambiar tema">${getTheme() === 'dark' ? '☀' : '☾'}</button>
           <button class="btn btn--ghost btn--icon btn--sm" id="btn-stats" aria-label="Estadísticas">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -55,6 +66,14 @@ export function HomeView(rootEl) {
           </button>
         </div>
       </header>
+
+      ${hasTags ? `
+      <div class="tag-panel" id="tag-panel" hidden>
+        <button class="tag-pill ${!hasTagFilter ? 'tag-pill--active' : ''}" id="btn-all-tags">Todos</button>
+        ${availableTags.map(t => `
+          <button class="tag-pill ${selectedTags.includes(t) ? 'tag-pill--active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>
+        `).join('')}
+      </div>` : ''}
 
       <main class="home-main">
 
@@ -121,6 +140,36 @@ export function HomeView(rootEl) {
 
   if (canStudy) {
     rootEl.querySelector('#btn-study').addEventListener('click', () => navigate('study'))
+  }
+
+  if (hasTags) {
+    const btnTags  = rootEl.querySelector('#btn-tags')
+    const tagPanel = rootEl.querySelector('#tag-panel')
+
+    btnTags.addEventListener('click', () => {
+      const open = tagPanel.hasAttribute('hidden')
+      tagPanel.toggleAttribute('hidden', !open)
+      btnTags.setAttribute('aria-expanded', open ? 'true' : 'false')
+    })
+
+    tagPanel.addEventListener('click', (e) => {
+      const pill = e.target.closest('[data-tag], #btn-all-tags')
+      if (!pill) return
+      if (pill.id === 'btn-all-tags') {
+        studySessionService.setSelectedTags([])
+      } else {
+        const tag = pill.dataset.tag
+        const current = studySessionService.getSelectedTags()
+        const next = current.includes(tag)
+          ? current.filter(t => t !== tag)
+          : [...current, tag]
+        studySessionService.setSelectedTags(next)
+      }
+      HomeView(rootEl)
+      // mantener el panel abierto tras re-render
+      rootEl.querySelector('#tag-panel')?.removeAttribute('hidden')
+      rootEl.querySelector('#btn-tags')?.setAttribute('aria-expanded', 'true')
+    })
   }
 
   rootEl.querySelector('#btn-theme').addEventListener('click', () => {

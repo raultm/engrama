@@ -280,6 +280,56 @@ kbd {
   margin-left: auto;
 }
 
+/* ===== TAG FILTER ===== */
+.btn--tag-active {
+  color: var(--color-primary);
+  position: relative;
+}
+
+.btn--tag-active::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.tag-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.tag-pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.tag-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.tag-pill--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: 500;
+}
+
 .engrama-selector select {
   background: var(--color-surface2);
   border: 1px solid var(--color-border);
@@ -1572,11 +1622,23 @@ body.study-active #app {
   .app-header { padding: 12px 16px; }
   .home-main, .collection-main, .stats-main { padding: 16px; }
 
-  .home-header { flex-wrap: wrap; gap: 8px; }
-  .home-header__logo { order: 1; }
-  .home-header__actions { order: 2; }
+  .home-header { flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
+  .home-header__logo { order: 1; flex: 1; }
+  .home-header__actions { order: 2; margin-left: auto; }
   .engrama-selector { order: 3; flex: 0 0 100%; margin-left: 0; }
   .engrama-selector select { width: 100%; max-width: none; }
+  .tag-panel { padding: 10px 16px; }
+
+  /* Tsumego: sin envoltorio en móvil para maximizar espacio */
+  .flashcard[data-card-type="tsumego"] {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    min-height: unset;
+  }
+  .flashcard[data-card-type="tsumego"] .flashcard__label { display: none; }
   .collections-grid { grid-template-columns: 1fr; }
 
   .flashcard { padding: 24px 20px; min-height: 160px; }

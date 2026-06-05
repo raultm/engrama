@@ -123,8 +123,8 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
     revealed = true
     await fillAnswerContent(session.currentCard, { questionEl })
     btnReveal.setAttribute('hidden', '')
-    if (autoRating !== undefined) {
-      // Modo automático: guardar el rating y mostrar "Siguiente →"
+    if (typeof autoRating === 'number') {
+      // Modo automático (tsumego): guardar el rating y mostrar "Siguiente →"
       pendingRating = autoRating
       btnNext.removeAttribute('hidden')
     } else {

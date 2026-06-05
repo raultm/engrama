@@ -31,13 +31,42 @@ export class StudySessionService {
     }
   }
 
+  getAvailableTags() {
+    const allCards = this._cardRepo.findAll()
+    const tagSet = new Set()
+    allCards.forEach(c => (c.tags ?? []).forEach(t => tagSet.add(t)))
+    return [...tagSet].sort()
+  }
+
+  getSelectedTags() {
+    const raw = this._db.getSetting('selected_tags')
+    if (!raw) return []
+    try { return JSON.parse(raw) } catch { return [] }
+  }
+
+  setSelectedTags(tags) {
+    if (!tags || tags.length === 0) {
+      this._db.setSetting('selected_tags', null)
+    } else {
+      this._db.setSetting('selected_tags', JSON.stringify(tags))
+    }
+  }
+
   startGlobalSession() {
     const currentProfile = this._profileRepo.getOrCreate()
     const maxElo  = currentProfile.eloRating + 200   // ventana de acceso: ELO actual + 200
 
+    const selectedTags = this.getSelectedTags()
+
     const tree = this._collectionRepo.buildTree()
-    const allCards = tree.flatMap(col => col.getAllFlashCardsRecursive())
+    let allCards = tree.flatMap(col => col.getAllFlashCardsRecursive())
       .filter(c => c.eloDifficulty <= maxElo)  // solo tarjetas accesibles
+
+    if (selectedTags.length > 0) {
+      allCards = allCards.filter(c =>
+        (c.tags ?? []).some(t => selectedTags.includes(t))
+      )
+    }
 
     const scheduler = schedulerRegistry.getDefault()
     const cards = scheduler.selectCards(allCards)
@@ -67,6 +96,12 @@ export class StudySessionService {
     const accessible   = allCards.filter(c => c.eloDifficulty <= maxElo)
     const inaccessible = allCards.filter(c => c.eloDifficulty >  maxElo)
 
+    // Aplicar filtro de tags si hay alguno activo
+    const selectedTags = this.getSelectedTags()
+    const filtered = selectedTags.length > 0
+      ? accessible.filter(c => (c.tags ?? []).some(t => selectedTags.includes(t)))
+      : accessible
+
     // Próximos hitos: ELOs de tarjetas aún no accesibles
     const inaccessByElo = inaccessible.reduce((acc, c) => {
       acc[c.eloDifficulty] = (acc[c.eloDifficulty] ?? 0) + 1
@@ -76,8 +111,8 @@ export class StudySessionService {
       .map(([elo, count]) => ({ elo: Number(elo), count }))
       .sort((a, b) => a.elo - b.elo)
 
-    // Próxima revisión entre las accesibles no exigibles
-    const upcoming = accessible.filter(c => !c.isDue(now) && c.schedulerData?.nextReview)
+    // Próxima revisión entre las tarjetas filtradas no exigibles
+    const upcoming = filtered.filter(c => !c.isDue(now) && c.schedulerData?.nextReview)
     const nextReviewAt = upcoming.length > 0
       ? upcoming.reduce((min, c) => {
           const t = new Date(c.schedulerData.nextReview)
@@ -87,10 +122,10 @@ export class StudySessionService {
 
     return {
       total: allCards.length,
-      due: accessible.filter(c => c.isDue(now)).length,
-      notDue: accessible.filter(c => !c.isDue(now) && !c.isNew()).length,
-      newCards: accessible.filter(c => c.isNew()).length,
-      unlockedCount: accessible.length,      // compat con StatsView
+      due: filtered.filter(c => c.isDue(now)).length,
+      notDue: filtered.filter(c => !c.isDue(now) && !c.isNew()).length,
+      newCards: filtered.filter(c => c.isNew()).length,
+      unlockedCount: accessible.length,      // compat con StatsView (global)
       lockedCount: inaccessible.length,
       nextUnlockElo: lockedMilestones[0]?.elo ?? null,
       lockedMilestones,
