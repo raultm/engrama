@@ -21,9 +21,7 @@ export function renderGoBoard({
   blackStones,
   whiteStones,
   playerToMove = 'B',
-  markedMoves  = [],
   interactive  = false,
-  wrongMove    = null,
   lastMove     = null,
   correctMoves = [],
   wrongMoves   = [],
@@ -103,29 +101,8 @@ export function renderGoBoard({
     }),
   ]
 
-  // ── Jugadas marcadas image-occlusion (verde con anillo) ───────────────────
-  const marksSvg = markedMoves.filter(s => { const {col,row}=decode(s); return inCrop(col,row) }).map(s => {
-    const {col,row} = decode(s)
-    const fill   = playerToMove==='B' ? BLACK_FILL : WHITE_FILL
-    const stroke = playerToMove==='B' ? '#444' : '#888'
-    const sw     = playerToMove==='B' ? '0.5' : '1'
-    return `${_stone(pxC(col),pxR(row),R,fill,stroke,sw)}
-      <circle cx="${pxC(col)}" cy="${pxR(row)}" r="${R*0.42}" fill="none" stroke="${MARK_COLOR}" stroke-width="${Math.max(1.5,CELL*0.07)}"/>`
-  })
-
-  // ── Jugada incorrecta image-occlusion (rojo con anillo) ──────────────────
-  const wrongMoveSvg = wrongMove ? (() => {
-    const {col,row} = decode(wrongMove)
-    if (!inCrop(col,row)) return ''
-    const fill   = playerToMove==='B' ? BLACK_FILL : WHITE_FILL
-    const stroke = playerToMove==='B' ? '#444' : '#888'
-    const sw     = playerToMove==='B' ? '0.5' : '1'
-    return `${_stone(pxC(col),pxR(row),R,fill,stroke,sw)}
-      <circle cx="${pxC(col)}" cy="${pxR(row)}" r="${R*0.42}" fill="none" stroke="${WRONG_COLOR}" stroke-width="${Math.max(1.5,CELL*0.07)}"/>`
-  })() : ''
-
   // ── Targets interactivos ──────────────────────────────────────────────────
-  const occupiedT = new Set([...blackStones, ...whiteStones, ...markedMoves])
+  const occupiedT = new Set([...blackStones, ...whiteStones])
   const targetsSvg = interactive
     ? Array.from({length: N}, (_,c) => Array.from({length: N}, (_,r) => {
         if (!inCrop(c,r)) return ''
@@ -182,8 +159,6 @@ export function renderGoBoard({
     ${lines.join('')}
     ${hoshi.join('')}
     ${stonesSvg.join('')}
-    ${marksSvg.join('')}
-    ${wrongMoveSvg}
     ${annotationSvg}
     ${lastMoveSvg}
     ${targetsSvg}

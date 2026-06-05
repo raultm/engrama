@@ -1,9 +1,5 @@
-/**
- * Reemplaza window.confirm() con un modal propio.
- * Devuelve una Promise<boolean>.
- *
- * showConfirm({ title, message, confirmLabel, cancelLabel, dangerous })
- */
+import { escapeHtml } from '../utils/html.js'
+
 export function showConfirm({
   title,
   message = '',
@@ -55,10 +51,4 @@ export function showConfirm({
       : overlay.querySelector('#cm-confirm')
     focusTarget.focus()
   })
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str
-  return d.innerHTML
 }

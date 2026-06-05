@@ -1,5 +1,6 @@
 import { CardStrategy } from './CardStrategy.js'
 import { ImageStore } from '../../infrastructure/db/ImageStore.js'
+import { escapeHtml } from '../utils/html.js'
 
 export class ImageOcclusionCardStrategy extends CardStrategy {
   async renderQuestion(card) {
@@ -54,10 +55,4 @@ function shapeToSvg(mask, isActive, isRevealed) {
   }
   // rect (default)
   return `<rect x="${mask.x}" y="${mask.y}" width="${mask.w}" height="${mask.h}" fill="${fill}" stroke="${stroke}" stroke-width="${SW}"/>`
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str ?? ''
-  return d.innerHTML
 }

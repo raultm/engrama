@@ -1,6 +1,7 @@
 import { CardStrategy }        from './CardStrategy.js'
 import { renderGoBoard }       from '../../domain/sgf/GoBoard.js'
 import { TsumegoController }   from '../../domain/sgf/TsumegoController.js'
+import { escapeHtml }          from '../utils/html.js'
 
 // Umbrales de calificación automática (segundos por movimiento del jugador)
 const RATING_PERFECT = 5    // < 5s  → Perfecta
@@ -270,9 +271,3 @@ function _attachReview(containerEl, ctrl) {
 // ── Utils ─────────────────────────────────────────────────────────────────────
 
 function _delay(ms) { return new Promise(r => setTimeout(r, ms)) }
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str ?? ''
-  return d.innerHTML
-}

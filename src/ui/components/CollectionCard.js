@@ -1,4 +1,5 @@
 import { navigate } from '../router.js'
+import { escapeHtml } from '../utils/html.js'
 
 export function CollectionCard(collection) {
   const el = document.createElement('div')
@@ -47,10 +48,4 @@ export function CollectionCard(collection) {
   })
 
   return el
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div')
-  div.textContent = str
-  return div.innerHTML
 }

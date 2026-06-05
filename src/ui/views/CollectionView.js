@@ -1,6 +1,7 @@
 import { getContainer } from '../../infrastructure/container.js'
 import { CollectionCard } from '../components/CollectionCard.js'
 import { navigate } from '../router.js'
+import { escapeHtml } from '../utils/html.js'
 
 export function CollectionView(rootEl, collectionId) {
   const { collectionService, flashCardService } = getContainer()
@@ -144,10 +145,4 @@ function showAddCardModal(rootEl, collectionId, collection) {
     modal.remove()
     CollectionView(rootEl, collectionId)
   })
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div')
-  div.textContent = str
-  return div.innerHTML
 }

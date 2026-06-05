@@ -2,6 +2,7 @@ import { BasicCardStrategy } from '../card-strategies/BasicCardStrategy.js'
 import { ClozeCardStrategy } from '../card-strategies/ClozeCardStrategy.js'
 import { ImageOcclusionCardStrategy } from '../card-strategies/ImageOcclusionCardStrategy.js'
 import { TsumegoCardStrategy } from '../card-strategies/TsumegoCardStrategy.js'
+import { escapeHtml } from '../utils/html.js'
 
 const REGISTRY = {
   basic:            new BasicCardStrategy(),
@@ -45,10 +46,4 @@ export async function fillAnswerContent(card, { questionEl }) {
   // Hook opcional: permite a estrategias con estado (ej: tsumego) re-enganchar
   // listeners al DOM tras el reemplazo de innerHTML.
   strategy.postReveal?.(card, questionEl)
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str ?? ''
-  return d.innerHTML
 }

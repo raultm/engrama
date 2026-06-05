@@ -135,6 +135,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   }
 
   await fillCard(card)
+  resetState()
   updateProgress()
 
   rootEl.querySelector('#btn-exit').addEventListener('click', async () => {

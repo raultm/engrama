@@ -1,5 +1,6 @@
 import { CardStrategy } from './CardStrategy.js'
 import { ImageStore } from '../../infrastructure/db/ImageStore.js'
+import { escapeHtml } from '../utils/html.js'
 
 export class BasicCardStrategy extends CardStrategy {
   async renderQuestion(card) {
@@ -41,10 +42,4 @@ async function _resolveImages(text) {
 function _render(text) {
   const t = text ?? ''
   return /<img\b|<br\b/i.test(t) ? t : escapeHtml(t)
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str ?? ''
-  return d.innerHTML
 }

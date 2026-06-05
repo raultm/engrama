@@ -1,3 +1,5 @@
+import { escapeHtml } from '../utils/html.js'
+
 export function UserEloBar(profile) {
   const el = document.createElement('div')
   el.className = 'elo-bar'
@@ -17,10 +19,4 @@ export function UserEloBar(profile) {
   `
 
   return el
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div')
-  div.textContent = str
-  return div.innerHTML
 }

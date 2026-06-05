@@ -263,7 +263,6 @@ export class AnkiImporter {
           blackStones:  parsed.blackStones,
           whiteStones:  parsed.whiteStones,
           playerToMove: parsed.playerToMove,
-          correctMoves: parsed.correctMoves,
           comment:      parsed.comment,
         },
         tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,

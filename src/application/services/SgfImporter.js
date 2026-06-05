@@ -54,7 +54,6 @@ export class SgfImporter {
             blackStones:   parsed.blackStones,
             whiteStones:   parsed.whiteStones,
             playerToMove:  parsed.playerToMove,
-            correctMoves:  parsed.correctMoves,
             comment:       parsed.comment,
           },
           eloDifficulty: 1500,

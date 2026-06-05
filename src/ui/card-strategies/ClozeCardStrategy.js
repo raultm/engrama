@@ -1,4 +1,5 @@
 import { CardStrategy } from './CardStrategy.js'
+import { escapeHtml } from '../utils/html.js'
 
 export class ClozeCardStrategy extends CardStrategy {
   async renderQuestion(card) {
@@ -42,10 +43,4 @@ function renderClozeHtml(text, clozeIndex, revealed) {
   if (lastIndex < text.length) parts.push(escapeHtml(text.slice(lastIndex)))
 
   return parts.join('').replace(/\n/g, '<br>')
-}
-
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str ?? ''
-  return d.innerHTML
 }

@@ -3,6 +3,7 @@ import { navigate } from '../router.js'
 import { toggleTheme, getTheme } from '../theme.js'
 import { getRegistry, getActiveId, setActiveId } from '../engramaRegistry.js'
 import { buildSeedRegistry } from '../../data/seedRegistry.js'
+import { escapeHtml } from '../utils/html.js'
 import { SeedSelectionView } from './SeedSelectionView.js'
 import { RANKS, getRank } from '../../domain/ranks.js'
 
@@ -232,8 +233,3 @@ function _studyLabel({ due, newCards }) {
   return 'Repasar'                                        // sesión corta solo repasos
 }
 
-function escapeHtml(str) {
-  const d = document.createElement('div')
-  d.textContent = str
-  return d.innerHTML
-}
