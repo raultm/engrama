@@ -49,13 +49,12 @@ export class TsumegoCardStrategy extends CardStrategy {
 // ── Construcción de HTML ──────────────────────────────────────────────────────
 
 function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, boardOpts = {}) {
-  const ptm = playerToMove === 'W'
-    ? '<span class="tsumego-ptm tsumego-ptm--white">⚪ Blancas juegan</span>'
-    : '<span class="tsumego-ptm tsumego-ptm--black">⚫ Negras juegan</span>'
+  const ptmClass = playerToMove === 'W' ? 'tsumego-ptm--white' : 'tsumego-ptm--black'
+  const ptmText  = playerToMove === 'W' ? '⚪ Blancas juegan'  : '⚫ Negras juegan'
   const board = renderGoBoard({ boardSize, blackStones, whiteStones, playerToMove, ...boardOpts })
 
   return `<div class="tsumego-board" id="tsumego-live">${board}</div>
-    ${ptm}
+    <span class="tsumego-ptm ${ptmClass}" id="tsumego-ptm">${ptmText}</span>
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav" hidden>
       <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
@@ -64,7 +63,6 @@ function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, 
       <button class="tsumego-nav-btn" id="t-next">›</button>
       <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
-    <p class="tsumego-result" id="tsumego-result"></p>
     <p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment ?? '')}</p>`
 }
 
@@ -78,10 +76,15 @@ function _reviewHtml(ctrl) {
     interactive: true,
   })
   const icon = ctrl.currentMover() === 'W' ? '⚪' : '⚫'
+  const ptmClass = ctrl.result === 'correct' ? 'tsumego-ptm--correct'
+                 : ctrl.result === 'wrong'   ? 'tsumego-ptm--wrong'
+                 : (ctrl.currentMover() === 'W' ? 'tsumego-ptm--white' : 'tsumego-ptm--black')
+  const ptmText  = ctrl.result === 'correct' ? '✓ Correcto'
+                 : ctrl.result === 'wrong'   ? '✗ Incorrecto'
+                 : (ctrl.currentMover() === 'W' ? '⚪ Blancas juegan' : '⚫ Negras juegan')
 
-  // En review: icono de turno integrado en la barra de navegación (sin texto)
-  // Comentario al final para que no desplace el tablero
   return `<div class="tsumego-board" id="tsumego-live">${board}</div>
+    <span class="tsumego-ptm ${ptmClass}" id="tsumego-ptm">${ptmText}</span>
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav">
       <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
@@ -90,14 +93,7 @@ function _reviewHtml(ctrl) {
       <button class="tsumego-nav-btn" id="t-next">›</button>
       <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
-    <p class="tsumego-result" id="tsumego-result">${_resultText(ctrl.result)}</p>
     <p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>`
-}
-
-function _resultText(result) {
-  if (result === 'correct') return '<span class="tsumego-ok">✓ Correcto</span>'
-  if (result === 'wrong')   return '<span class="tsumego-ko">✗ Incorrecto</span>'
-  return ''
 }
 
 // ── Timer por movimiento ──────────────────────────────────────────────────────
@@ -181,13 +177,16 @@ function _attachSolve(containerEl, ctrl, onReveal) {
     const autoRating = timer.getAutoRating(ctrl._pathCorrect)
     ctrl.finalizeResult()
     ctrl.enterReview()
-    const navEl    = containerEl.querySelector('#tsumego-nav')
-    const resultEl = containerEl.querySelector('#tsumego-result')
-    if (navEl)    navEl.removeAttribute('hidden')
-    if (resultEl) resultEl.innerHTML = _resultText(ctrl.result)
+    const navEl = containerEl.querySelector('#tsumego-nav')
+    const ptmEl = containerEl.querySelector('#tsumego-ptm')
+    if (navEl) navEl.removeAttribute('hidden')
+    if (ptmEl) {
+      ptmEl.className = `tsumego-ptm tsumego-ptm--${ctrl.result}`
+      ptmEl.textContent = ctrl.result === 'correct' ? '✓ Correcto' : '✗ Incorrecto'
+    }
     redraw()
     _attachReview(containerEl, ctrl)
-    onReveal?.(autoRating)   // ← pasa el rating calculado
+    onReveal?.(autoRating)
   }
 
   const handleMove = async (coord) => {

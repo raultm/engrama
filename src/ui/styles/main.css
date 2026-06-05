@@ -1209,14 +1209,17 @@ body.study-active #app {
   border-radius: 12px;
   margin-bottom: 10px;
 }
-.tsumego-ptm--black { background: #111; color: #fff; }
-.tsumego-ptm--white { background: #f0ece0; color: #333; border: 1px solid #ccc; }
+.tsumego-ptm--black   { background: #111; color: #fff; }
+.tsumego-ptm--white   { background: #f0ece0; color: #333; border: 1px solid #ccc; }
+.tsumego-ptm--correct { background: var(--color-perfect); color: #fff; }
+.tsumego-ptm--wrong   { background: var(--color-forgotten); color: #fff; }
 
 .tsumego-comment {
   font-size: 13px;
   color: var(--color-text-muted);
   margin: 0 0 10px;
   text-align: center;
+  min-height: 2em;
 }
 
 .tsumego-board {
@@ -1226,13 +1229,17 @@ body.study-active #app {
   margin: 4px 0;
 }
 
-/* Barra de navegación review */
+/* Barra de navegación review — reserva espacio aunque esté oculta */
 .tsumego-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   margin: 10px 0 4px;
+}
+.tsumego-nav[hidden] {
+  display: flex !important;
+  visibility: hidden;
 }
 
 .tsumego-nav-btn {
@@ -1260,9 +1267,6 @@ body.study-active #app {
   text-align: center;
 }
 
-.tsumego-result { text-align: center; font-size: 15px; font-weight: 600; margin: 8px 0 0; min-height: 1.4em; }
-.tsumego-ok     { color: var(--color-perfect); }
-.tsumego-ko     { color: var(--color-forgotten); }
 
 /* Tarjeta tsumego: eliminar padding para maximizar espacio del tablero */
 .flashcard[data-card-type="tsumego"] {
