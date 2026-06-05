@@ -104,7 +104,7 @@ export class TsumegoController {
       }
     }
 
-    if (classification === 'wrong' || classification === 'wrong_unknown') {
+    if (classification !== 'correct') {
       this._pathCorrect = false
     }
 

@@ -205,6 +205,17 @@ describe('TsumegoController — solve', () => {
     expect(ctrl._pathCorrect).toBe(false)
   })
 
+  it('variación neutral (sin marcador) marca el camino como incorrecto', () => {
+    // SGF con RIGHT en primera variación, segunda sin comentario (neutral)
+    // El jugador elige la variación neutral → debe resultar en wrong
+    const sgf = `(;SZ[9]PL[B]AB[aa](;B[bb]C[RIGHT])(;B[cc]))`
+    const ctrl = makeCtrl(sgf)
+    ctrl.handleMove('cc')  // variación neutral
+    expect(ctrl._pathCorrect).toBe(false)
+    ctrl.finalizeResult()
+    expect(ctrl.result).toBe('wrong')
+  })
+
   it('handleMove con jugada no contemplada → wrong_unknown y freeMode', () => {
     const ctrl = makeCtrl()
     const res = ctrl.handleMove('aa')

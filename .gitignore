@@ -6,3 +6,5 @@ dist/
 .claude/
 public/sql-wasm-browser.wasm
 public/sql-wasm-browser.js
+
+sgf/*

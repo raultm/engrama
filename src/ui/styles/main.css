@@ -1260,7 +1260,7 @@ body.study-active #app {
   text-align: center;
 }
 
-.tsumego-result { text-align: center; font-size: 15px; font-weight: 600; margin: 8px 0 0; }
+.tsumego-result { text-align: center; font-size: 15px; font-weight: 600; margin: 8px 0 0; min-height: 1.4em; }
 .tsumego-ok     { color: var(--color-perfect); }
 .tsumego-ko     { color: var(--color-forgotten); }
 
@@ -1278,14 +1278,16 @@ body.study-active #app {
   display: none;
 }
 
-/* Timer de movimiento tsumego */
+/* Timer de movimiento tsumego — misma caja que .tsumego-nav para evitar layout shift */
 .tsumego-timer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin: 10px 0 4px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
-  min-height: 16px;
-  margin: 2px 0;
 }
 
 .tsumego-hint {
