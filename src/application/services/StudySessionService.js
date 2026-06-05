@@ -32,14 +32,19 @@ export class StudySessionService {
   }
 
   startGlobalSession() {
+    const currentProfile = this._profileRepo.getOrCreate()
+    const maxElo  = currentProfile.eloRating + 200   // ventana de acceso: ELO actual + 200
+
     const tree = this._collectionRepo.buildTree()
     const allCards = tree.flatMap(col => col.getAllFlashCardsRecursive())
+      .filter(c => c.eloDifficulty <= maxElo)  // solo tarjetas accesibles
+
     const scheduler = schedulerRegistry.getDefault()
     const cards = scheduler.selectCards(allCards)
 
     if (cards.length === 0) return null
 
-    const profile = this._profileRepo.getOrCreate()
+    const profile = currentProfile
     const session = new StudySession({
       id: generateId(),
       collectionId: 'global',
@@ -54,20 +59,25 @@ export class StudySessionService {
 
   getAllCardsStats() {
     const allCards = this._cardRepo.findAll()
-    const now = new Date()
-    const unlocked = allCards.filter(c => c.isUnlocked)
-    const locked = allCards.filter(c => !c.isUnlocked)
+    const profile  = this._profileRepo.getOrCreate()
+    const maxElo   = profile.eloRating + 200
+    const now      = new Date()
 
-    const lockedByElo = locked.reduce((acc, c) => {
+    // Tarjetas accesibles: ELO ≤ ELO_usuario + 200
+    const accessible   = allCards.filter(c => c.eloDifficulty <= maxElo)
+    const inaccessible = allCards.filter(c => c.eloDifficulty >  maxElo)
+
+    // Próximos hitos: ELOs de tarjetas aún no accesibles
+    const inaccessByElo = inaccessible.reduce((acc, c) => {
       acc[c.eloDifficulty] = (acc[c.eloDifficulty] ?? 0) + 1
       return acc
     }, {})
-    const lockedMilestones = Object.entries(lockedByElo)
+    const lockedMilestones = Object.entries(inaccessByElo)
       .map(([elo, count]) => ({ elo: Number(elo), count }))
       .sort((a, b) => a.elo - b.elo)
 
-    // Próxima revisión programada entre las tarjetas que aún no son exigibles
-    const upcoming = unlocked.filter(c => !c.isDue(now) && c.schedulerData?.nextReview)
+    // Próxima revisión entre las accesibles no exigibles
+    const upcoming = accessible.filter(c => !c.isDue(now) && c.schedulerData?.nextReview)
     const nextReviewAt = upcoming.length > 0
       ? upcoming.reduce((min, c) => {
           const t = new Date(c.schedulerData.nextReview)
@@ -77,11 +87,11 @@ export class StudySessionService {
 
     return {
       total: allCards.length,
-      due: unlocked.filter(c => c.isDue(now)).length,
-      notDue: unlocked.filter(c => !c.isDue(now) && !c.isNew()).length,
-      newCards: unlocked.filter(c => c.isNew()).length,
-      unlockedCount: unlocked.length,
-      lockedCount: locked.length,
+      due: accessible.filter(c => c.isDue(now)).length,
+      notDue: accessible.filter(c => !c.isDue(now) && !c.isNew()).length,
+      newCards: accessible.filter(c => c.isNew()).length,
+      unlockedCount: accessible.length,      // compat con StatsView
+      lockedCount: inaccessible.length,
       nextUnlockElo: lockedMilestones[0]?.elo ?? null,
       lockedMilestones,
       nextReviewAt,

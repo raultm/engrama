@@ -2,23 +2,27 @@ import { CardStrategy }        from './CardStrategy.js'
 import { renderGoBoard }       from '../../domain/sgf/GoBoard.js'
 import { TsumegoController }   from '../../domain/sgf/TsumegoController.js'
 
+// Umbrales de calificación automática (segundos por movimiento del jugador)
+const RATING_PERFECT = 5    // < 5s  → Perfecta
+const RATING_GOOD    = 10   // < 10s → Buena
+//                           ≥ 10s  → Difícil
+// Movimiento incorrecto (cualquier tiempo) → Olvidada
+
 export class TsumegoCardStrategy extends CardStrategy {
-  // El controlador se guarda como estado de instancia (singleton de la estrategia).
-  // Una sola carta activa a la vez — esto es suficiente.
   _ctrl = null
 
-  // ── renderQuestion ────────────────────────────────────────────────────────
-
   async renderQuestion(card) {
-    this._ctrl = null   // reset al mostrar tarjeta nueva
-
+    this._ctrl = null
     const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
-    return _html(boardSize, blackStones, whiteStones, playerToMove, comment, {
-      interactive: true,
-    })
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { interactive: true })
   }
 
-  // ── postRender: setup completo del modo solve ────────────────────────────
+  // Tsumego no usa el footer estándar — el flujo es obligatorio
+  setupFooter(btnReveal, ratingButtons, btnNext) {
+    btnReveal.setAttribute('hidden', '')
+    ratingButtons.setAttribute('hidden', '')
+    btnNext.setAttribute('hidden', '')
+  }
 
   postRender(card, containerEl, onReveal) {
     const ctrl = new TsumegoController({ ...card.extraData })
@@ -26,29 +30,16 @@ export class TsumegoCardStrategy extends CardStrategy {
     _attachSolve(containerEl, ctrl, onReveal)
   }
 
-  // ── renderAnswer: usado cuando el usuario pulsa "Mostrar respuesta" ───────
-  // También es invocado por fillAnswerContent tras onReveal.
-  // Si el controlador ya está en review, devuelve el estado actual del tablero.
-
   async renderAnswer(card) {
-    if (this._ctrl?.mode === 'review') {
-      return _reviewHtml(this._ctrl)
-    }
-    // Fallback: posición inicial con primeras jugadas correctas marcadas
-    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
+    if (this._ctrl?.mode === 'review') return _reviewHtml(this._ctrl)
     const tmpCtrl = new TsumegoController({ ...card.extraData })
     const { correctMoves } = tmpCtrl.getAnnotations()
-    return _html(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves })
+    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves })
   }
 
-  // ── postReveal: re-engancha listeners tras fillAnswerContent ──────────────
-
   postReveal(card, containerEl) {
-    const ctrl = this._ctrl
-    if (!ctrl) return
-    if (ctrl.mode === 'review') {
-      _attachReview(containerEl, ctrl)
-    }
+    if (this._ctrl?.mode === 'review') _attachReview(containerEl, this._ctrl)
   }
 
   getLabels() { return { question: 'Tsumego', answer: 'Solución' } }
@@ -56,57 +47,50 @@ export class TsumegoCardStrategy extends CardStrategy {
 
 // ── Construcción de HTML ──────────────────────────────────────────────────────
 
-function _html(boardSize, blackStones, whiteStones, playerToMove, comment, boardOpts = {}) {
+function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, boardOpts = {}) {
   const ptm = playerToMove === 'W'
     ? '<span class="tsumego-ptm tsumego-ptm--white">⚪ Blancas juegan</span>'
     : '<span class="tsumego-ptm tsumego-ptm--black">⚫ Negras juegan</span>'
-  const commentHtml = comment
-    ? `<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>`
-    : '<p class="tsumego-comment" id="tsumego-comment"></p>'
-
+  const commentHtml = `<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment ?? '')}</p>`
   const board = renderGoBoard({ boardSize, blackStones, whiteStones, playerToMove, ...boardOpts })
 
   return `${ptm}${commentHtml}
     <div class="tsumego-board" id="tsumego-live">${board}</div>
+    <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav" hidden>
-      <button class="tsumego-nav-btn" id="t-start" title="Inicio">⟨⟨</button>
-      <button class="tsumego-nav-btn" id="t-prev"  title="Anterior">‹</button>
+      <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
+      <button class="tsumego-nav-btn" id="t-prev">‹</button>
       <span   class="tsumego-nav-pos" id="t-pos">0 / 0</span>
-      <button class="tsumego-nav-btn" id="t-next"  title="Siguiente">›</button>
-      <button class="tsumego-nav-btn" id="t-end"   title="Final">⟩⟩</button>
+      <button class="tsumego-nav-btn" id="t-next">›</button>
+      <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
     <p class="tsumego-result" id="tsumego-result"></p>`
 }
 
 function _reviewHtml(ctrl) {
-  const { blackStones, whiteStones }                            = ctrl.getBoardState()
+  const { blackStones, whiteStones }                              = ctrl.getBoardState()
   const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
   const board = renderGoBoard({
-    boardSize: ctrl.boardSize,
-    playerToMove: ctrl.currentMover(),
+    boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
     blackStones, whiteStones,
     lastMove, correctMoves, wrongMoves, neutralMoves,
     interactive: true,
   })
-
   const ptm = ctrl.currentMover() === 'W'
-    ? '<span class="tsumego-ptm tsumego-ptm--white">⚪ Blancas juegan</span>'
-    : '<span class="tsumego-ptm tsumego-ptm--black">⚫ Negras juegan</span>'
+    ? '<span class="tsumego-ptm tsumego-ptm--white">⚪</span>'
+    : '<span class="tsumego-ptm tsumego-ptm--black">⚫</span>'
 
-  const commentHtml = `<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>`
-  const resultHtml  = _resultText(ctrl.result)
-  const posHtml     = `${ctrl.currentStep} / ${ctrl.totalSteps}`
-
-  return `${ptm}${commentHtml}
+  return `${ptm}<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>
     <div class="tsumego-board" id="tsumego-live">${board}</div>
+    <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav">
-      <button class="tsumego-nav-btn" id="t-start" title="Inicio">⟨⟨</button>
-      <button class="tsumego-nav-btn" id="t-prev"  title="Anterior">‹</button>
-      <span   class="tsumego-nav-pos" id="t-pos">${posHtml}</span>
-      <button class="tsumego-nav-btn" id="t-next"  title="Siguiente">›</button>
-      <button class="tsumego-nav-btn" id="t-end"   title="Final">⟩⟩</button>
+      <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
+      <button class="tsumego-nav-btn" id="t-prev">‹</button>
+      <span   class="tsumego-nav-pos" id="t-pos">${ctrl.currentStep} / ${ctrl.totalSteps}</span>
+      <button class="tsumego-nav-btn" id="t-next">›</button>
+      <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
-    <p class="tsumego-result" id="tsumego-result">${resultHtml}</p>`
+    <p class="tsumego-result" id="tsumego-result">${_resultText(ctrl.result)}</p>`
 }
 
 function _resultText(result) {
@@ -115,20 +99,63 @@ function _resultText(result) {
   return ''
 }
 
+// ── Timer por movimiento ──────────────────────────────────────────────────────
+
+function createMoveTimer(timerEl) {
+  let start      = null
+  let interval   = null
+  const times    = []
+
+  function startMove() {
+    start = Date.now()
+    interval = setInterval(() => {
+      if (!timerEl) return
+      const secs = Math.floor((Date.now() - start) / 1000)
+      timerEl.textContent = secs > 0 ? `${secs}s` : ''
+    }, 500)
+  }
+
+  function stopMove() {
+    if (interval) { clearInterval(interval); interval = null }
+    if (start) {
+      times.push((Date.now() - start) / 1000)
+      start = null
+    }
+    if (timerEl) timerEl.textContent = ''
+  }
+
+  function clear() {
+    if (interval) { clearInterval(interval); interval = null }
+    if (timerEl) timerEl.textContent = ''
+  }
+
+  function getAutoRating(isCorrect) {
+    if (!isCorrect) return 0
+    if (!times.length) return 3
+    const avg = times.reduce((a,b) => a+b, 0) / times.length
+    if (avg < RATING_PERFECT) return 3
+    if (avg < RATING_GOOD)    return 2
+    return 1
+  }
+
+  return { startMove, stopMove, clear, getAutoRating }
+}
+
 // ── Modo solve ────────────────────────────────────────────────────────────────
 
 function _attachSolve(containerEl, ctrl, onReveal) {
-  const boardEl  = () => containerEl.querySelector('#tsumego-live')
-  const commentEl = () => containerEl.querySelector('#tsumego-comment')
+  const boardEl    = () => containerEl.querySelector('#tsumego-live')
+  const commentEl  = () => containerEl.querySelector('#tsumego-comment')
+  const timerEl    = containerEl.querySelector('#tsumego-timer')
+  const timer      = createMoveTimer(timerEl)
 
   const redraw = () => {
     const el = boardEl()
     if (!el) return
-    const { blackStones, whiteStones }                            = ctrl.getBoardState()
+    const { blackStones, whiteStones }                              = ctrl.getBoardState()
     const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
     el.innerHTML = renderGoBoard({
-      boardSize: ctrl.boardSize,
-      playerToMove: ctrl.currentMover(),
+      boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
       blackStones, whiteStones,
       lastMove, correctMoves, wrongMoves, neutralMoves,
       interactive: ctrl.mode === 'solve',
@@ -139,12 +166,18 @@ function _attachSolve(containerEl, ctrl, onReveal) {
   }
 
   const attachTargets = () => {
+    timer.startMove()
     boardEl()?.querySelectorAll('.go-target').forEach(rect => {
-      rect.addEventListener('click', () => handleMove(rect.dataset.move), { once: true })
+      rect.addEventListener('click', () => {
+        timer.stopMove()
+        handleMove(rect.dataset.move)
+      }, { once: true })
     })
   }
 
   const enterReview = () => {
+    timer.clear()
+    const autoRating = timer.getAutoRating(ctrl._pathCorrect)
     ctrl.finalizeResult()
     ctrl.enterReview()
     const navEl    = containerEl.querySelector('#tsumego-nav')
@@ -153,7 +186,7 @@ function _attachSolve(containerEl, ctrl, onReveal) {
     if (resultEl) resultEl.innerHTML = _resultText(ctrl.result)
     redraw()
     _attachReview(containerEl, ctrl)
-    onReveal?.()
+    onReveal?.(autoRating)   // ← pasa el rating calculado
   }
 
   const handleMove = async (coord) => {
@@ -161,9 +194,7 @@ function _attachSolve(containerEl, ctrl, onReveal) {
     redraw()
 
     if (result.classification === 'wrong_unknown') {
-      await _delay(100)
-      enterReview()
-      return
+      await _delay(100); enterReview(); return
     }
 
     if (ctrl.hasOpponentResponse()) {
@@ -171,12 +202,12 @@ function _attachSolve(containerEl, ctrl, onReveal) {
       const opResult = ctrl.playOpponentResponse()
       redraw()
       if (!opResult?.hasMore || ctrl.isSequenceEnd()) {
-        await _delay(200)
-        enterReview()
+        await _delay(200); enterReview()
+      } else {
+        timer.startMove()  // reinicia timer para el siguiente movimiento del jugador
       }
     } else if (ctrl.isSequenceEnd()) {
-      await _delay(200)
-      enterReview()
+      await _delay(200); enterReview()
     }
   }
 
@@ -193,11 +224,10 @@ function _attachReview(containerEl, ctrl) {
   const redraw = () => {
     const el = boardEl()
     if (!el) return
-    const { blackStones, whiteStones }                             = ctrl.getBoardState()
+    const { blackStones, whiteStones }                              = ctrl.getBoardState()
     const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
     el.innerHTML = renderGoBoard({
-      boardSize: ctrl.boardSize,
-      playerToMove: ctrl.currentMover(),
+      boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
       blackStones, whiteStones,
       lastMove, correctMoves, wrongMoves, neutralMoves,
       interactive: true,
@@ -212,13 +242,8 @@ function _attachReview(containerEl, ctrl) {
 
   const attachTargets = () => {
     boardEl()?.querySelectorAll('.go-target').forEach(rect => {
-      rect.addEventListener('click', () => handleReviewMove(rect.dataset.move), { once: true })
+      rect.addEventListener('click', () => { ctrl.handleMove(rect.dataset.move); redraw() }, { once: true })
     })
-  }
-
-  const handleReviewMove = (coord) => {
-    ctrl.handleMove(coord)  // en modo review, handleMove sigue funcionando (explora variaciones)
-    redraw()
   }
 
   const updateButtons = () => {
@@ -229,7 +254,7 @@ function _attachReview(containerEl, ctrl) {
     const end   = q('#t-end');   if (end)   end.disabled   = !ctrl.canStepForward
   }
 
-  // Botones de navegación (delegar en el contenedor para sobrevivir re-renders)
+  // Delegación de eventos en el contenedor — sobrevive a re-renders del tablero
   containerEl.addEventListener('click', (e) => {
     const id = e.target.id
     if      (id === 't-prev')  { ctrl.stepBack();      redraw() }

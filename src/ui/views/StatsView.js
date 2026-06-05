@@ -15,7 +15,8 @@ export function StatsView(rootEl) {
   const unlockPct = Math.round((stats.unlockedCount / stats.total) * 100)
 
   const nextMilestone = stats.lockedMilestones[0]
-  const eloNeeded = nextMilestone ? nextMilestone.elo - profile.eloRating : 0
+  // La tarjeta se vuelve accesible cuando ELO_usuario + 200 >= card.eloDifficulty
+  const eloNeeded = nextMilestone ? Math.max(0, nextMilestone.elo - (profile.eloRating + 200)) : 0
 
   rootEl.innerHTML = `
     <div class="view stats-view">
@@ -47,7 +48,7 @@ export function StatsView(rootEl) {
 
         <div class="unlock-section">
           <div class="unlock-section__header">
-            <h2>Tarjetas desbloqueadas</h2>
+            <h2>Tarjetas accesibles</h2>
             <span class="unlock-count">${stats.unlockedCount} / ${stats.total}</span>
           </div>
           <div class="elo-track" role="progressbar" aria-valuenow="${unlockPct}" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de desbloqueo">
@@ -68,7 +69,7 @@ export function StatsView(rootEl) {
               `).join('')}
             </div>
           ` : `
-            <p class="unlock-complete">¡Has desbloqueado todas las tarjetas!</p>
+            <p class="unlock-complete">¡Tienes acceso a todas las tarjetas del mazo!</p>
           `}
         </div>
 

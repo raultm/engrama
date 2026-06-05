@@ -1,7 +1,7 @@
 import { getContainer } from '../../infrastructure/container.js'
 import { navigate } from '../router.js'
 import { showConfirm } from '../components/ConfirmModal.js'
-import { fillCardContent, fillAnswerContent } from '../components/CardRenderer.js'
+import { fillCardContent, fillAnswerContent, getStrategy } from '../components/CardRenderer.js'
 
 const RATINGS = [
   { value: 0, label: 'Olvidada', key: '1', className: 'rating--forgotten' },
@@ -55,6 +55,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
               <button class="btn rating-btn ${r.className}" data-rating="${r.value}">${r.label}</button>
             `).join('')}
           </div>
+          <button class="btn btn--primary btn--next" id="btn-next" hidden>Siguiente →</button>
         </div>
       </footer>
     </div>
@@ -66,9 +67,12 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   const frontTags     = rootEl.querySelector('#front-tags')
   const btnReveal     = rootEl.querySelector('#btn-reveal')
   const ratingButtons = rootEl.querySelector('#rating-buttons')
+  const btnNext       = rootEl.querySelector('#btn-next')
   const eloDiff       = rootEl.querySelector('#elo-diff')
   const progressFill  = rootEl.querySelector('#progress-fill')
   const progressText  = rootEl.querySelector('#progress-text')
+
+  let pendingRating = null   // calificación automática (tsumego)
 
   // Bloquear scroll de la página mientras dura la sesión
   document.body.classList.add('study-active')
@@ -85,13 +89,16 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   window.addEventListener('beforeunload', onUnload)
 
   async function fillCard(c) {
+    pendingRating = null
+    btnNext.setAttribute('hidden', '')
     await fillCardContent(c, { questionEl, tagsEl: frontTags, onReveal: reveal })
   }
 
   function resetState() {
     revealed = false
-    btnReveal.removeAttribute('hidden')
-    ratingButtons.setAttribute('hidden', '')
+    pendingRating = null
+    // La estrategia decide qué muestra el footer (tsumego oculta btn-reveal)
+    getStrategy(session.currentCard.cardType).setupFooter(btnReveal, ratingButtons, btnNext)
     eloDiff.textContent = ''
   }
 
@@ -110,13 +117,21 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
     }, 140)
   }
 
-  async function reveal() {
+  // reveal(autoRating?) — si se pasa rating, es calificación automática (tsumego)
+  async function reveal(autoRating) {
     if (revealed) return
     revealed = true
     await fillAnswerContent(session.currentCard, { questionEl })
     btnReveal.setAttribute('hidden', '')
-    ratingButtons.removeAttribute('hidden')
-    ratingButtons.querySelector('.rating-btn').focus()
+    if (autoRating !== undefined) {
+      // Modo automático: guardar el rating y mostrar "Siguiente →"
+      pendingRating = autoRating
+      btnNext.removeAttribute('hidden')
+    } else {
+      // Modo manual: mostrar botones de calificación
+      ratingButtons.removeAttribute('hidden')
+      ratingButtons.querySelector('.rating-btn').focus()
+    }
   }
 
   await fillCard(card)
@@ -138,6 +153,22 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   })
 
   btnReveal.addEventListener('click', reveal)
+
+  btnNext.addEventListener('click', () => {
+    const rating = pendingRating ?? 2   // Buena por defecto si no hay rating
+    const { session: next, userDelta } = studySessionService.processAnswer(session, rating)
+    session = next
+    eloDiff.textContent = userDelta >= 0 ? `+${userDelta} ELO` : `${userDelta} ELO`
+    eloDiff.className   = `elo-diff ${userDelta >= 0 ? 'elo-diff--up' : 'elo-diff--down'}`
+    if (next.isFinished) {
+      cleanup()
+      const syncPromise = getContainer().syncService.trySyncSessions()
+        .catch(() => ({ skipped: true, reason: 'error' }))
+      setTimeout(() => _renderSummary(rootEl, next, syncPromise), 400)
+    } else {
+      setTimeout(() => transitionToNext(), 350)
+    }
+  })
 
   ratingButtons.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-rating]')

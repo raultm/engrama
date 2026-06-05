@@ -945,7 +945,8 @@ body.study-active #app {
 }
 
 .study-footer-btns > .btn--reveal,
-.study-footer-btns > .rating-buttons {
+.study-footer-btns > .rating-buttons,
+.study-footer-btns > .btn--next {
   width: 100%;
   /* Igualar border a 2px en ambos para que la altura sea idéntica */
   border-width: 2px;
@@ -1212,6 +1213,25 @@ body.study-active #app {
 .tsumego-result { text-align: center; font-size: 15px; font-weight: 600; margin: 8px 0 0; }
 .tsumego-ok     { color: var(--color-perfect); }
 .tsumego-ko     { color: var(--color-forgotten); }
+
+/* Tarjeta tsumego: eliminar padding para que el tablero ocupe todo el ancho */
+.flashcard[data-card-type="tsumego"] {
+  padding: 12px 12px 16px;
+}
+
+.flashcard[data-card-type="tsumego"] .flashcard__content {
+  white-space: normal;
+}
+
+/* Timer de movimiento tsumego */
+.tsumego-timer {
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  min-height: 16px;
+  margin: 2px 0;
+}
 
 .tsumego-hint {
   text-align: center;
