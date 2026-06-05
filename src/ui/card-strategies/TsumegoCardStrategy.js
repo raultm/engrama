@@ -42,7 +42,7 @@ export class TsumegoCardStrategy extends CardStrategy {
     if (this._ctrl?.mode === 'review') _attachReview(containerEl, this._ctrl)
   }
 
-  getLabels() { return { question: 'Tsumego', answer: 'Solución' } }
+  getLabels() { return { question: '', answer: '' } }
 }
 
 // ── Construcción de HTML ──────────────────────────────────────────────────────
@@ -51,11 +51,10 @@ function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, 
   const ptm = playerToMove === 'W'
     ? '<span class="tsumego-ptm tsumego-ptm--white">⚪ Blancas juegan</span>'
     : '<span class="tsumego-ptm tsumego-ptm--black">⚫ Negras juegan</span>'
-  const commentHtml = `<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment ?? '')}</p>`
   const board = renderGoBoard({ boardSize, blackStones, whiteStones, playerToMove, ...boardOpts })
 
-  return `${ptm}${commentHtml}
-    <div class="tsumego-board" id="tsumego-live">${board}</div>
+  return `<div class="tsumego-board" id="tsumego-live">${board}</div>
+    ${ptm}
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav" hidden>
       <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
@@ -64,7 +63,8 @@ function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, 
       <button class="tsumego-nav-btn" id="t-next">›</button>
       <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
-    <p class="tsumego-result" id="tsumego-result"></p>`
+    <p class="tsumego-result" id="tsumego-result"></p>
+    <p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment ?? '')}</p>`
 }
 
 function _reviewHtml(ctrl) {
@@ -76,21 +76,21 @@ function _reviewHtml(ctrl) {
     lastMove, correctMoves, wrongMoves, neutralMoves,
     interactive: true,
   })
-  const ptm = ctrl.currentMover() === 'W'
-    ? '<span class="tsumego-ptm tsumego-ptm--white">⚪</span>'
-    : '<span class="tsumego-ptm tsumego-ptm--black">⚫</span>'
+  const icon = ctrl.currentMover() === 'W' ? '⚪' : '⚫'
 
-  return `${ptm}<p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>
-    <div class="tsumego-board" id="tsumego-live">${board}</div>
+  // En review: icono de turno integrado en la barra de navegación (sin texto)
+  // Comentario al final para que no desplace el tablero
+  return `<div class="tsumego-board" id="tsumego-live">${board}</div>
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav">
       <button class="tsumego-nav-btn" id="t-start">⟨⟨</button>
       <button class="tsumego-nav-btn" id="t-prev">‹</button>
-      <span   class="tsumego-nav-pos" id="t-pos">${ctrl.currentStep} / ${ctrl.totalSteps}</span>
+      <span   class="tsumego-nav-pos" id="t-pos">${icon} ${ctrl.currentStep}/${ctrl.totalSteps}</span>
       <button class="tsumego-nav-btn" id="t-next">›</button>
       <button class="tsumego-nav-btn" id="t-end">⟩⟩</button>
     </div>
-    <p class="tsumego-result" id="tsumego-result">${_resultText(ctrl.result)}</p>`
+    <p class="tsumego-result" id="tsumego-result">${_resultText(ctrl.result)}</p>
+    <p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment)}</p>`
 }
 
 function _resultText(result) {
@@ -235,7 +235,8 @@ function _attachReview(containerEl, ctrl) {
     const cEl = commentEl()
     if (cEl) cEl.textContent = comment
     const pEl = posEl()
-    if (pEl) pEl.textContent = `${ctrl.currentStep} / ${ctrl.totalSteps}`
+    const icon = ctrl.currentMover() === 'W' ? '⚪' : '⚫'
+    if (pEl) pEl.textContent = `${icon} ${ctrl.currentStep}/${ctrl.totalSteps}`
     attachTargets()
     updateButtons()
   }
