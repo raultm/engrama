@@ -1,0 +1,17 @@
+(;FF[4]GM[1]SZ[9]C[Negras juegan. La piedra blanca está casi capturada — encuentra su única libertad.]PL[B]AB[ab][ba][bb]AW[aa]
+(;B[ca]
+C[Correcto! La piedra blanca no tiene más libertades.])
+(;B[cb]
+C[Incorrecto — la blanca aún respira por C1.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. El grupo blanco tiene dos libertades. Ocupa el punto vital para matarlo.]PL[B]AB[ca][cb][da][ea][eb]AW[db][dc]
+(;B[cc]
+C[Correcto! C3 corta toda escapada. El grupo muere.])
+(;B[ec]
+C[Incorrecto — las blancas escapan hacia arriba.]))
+
+(;FF[4]GM[1]SZ[9]C[Negras juegan. Dos piedras blancas en atari. Captúralas antes de que escapen.]PL[B]AB[fc][gc][fd][gd]AW[ec][ed]
+(;B[dc];W[fb];B[eb]
+C[Correcto! Has perseguido y capturado las piedras blancas.])
+(;B[fb]
+C[Incorrecto — las blancas escapan por D5.]))

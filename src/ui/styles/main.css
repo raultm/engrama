@@ -469,6 +469,7 @@ kbd {
   color: var(--color-forgotten);
 }
 
+.seed-option__badge--action,
 .seed-option__badge--upload {
   font-size: 11px;
   background: rgba(108,99,255,0.15);
@@ -478,12 +479,39 @@ kbd {
 }
 
 /* ===== SEED SELECTION: installed badges ===== */
-.seed-option--installed .seed-option__badge {
+.seed-option--installed .seed-option__badge,
+.seed-option__badge--installed {
   font-size: 11px;
   background: rgba(108,99,255,0.15);
   color: var(--color-primary);
   padding: 2px 8px;
   border-radius: 999px;
+}
+
+.seed-option__badge--active {
+  font-size: 11px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.seed-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin: 20px 0 8px;
+  padding: 0 2px;
+}
+
+.seed-section-title:first-child { margin-top: 0; }
+
+.seed-section-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: -4px 0 8px;
+  padding: 0 2px;
 }
 
 .seed-option--active {

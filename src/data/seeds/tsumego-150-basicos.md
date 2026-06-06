@@ -2,6 +2,7 @@
 name: Tsumego — 150 Problemas Básicos
 description: 150 problemas seleccionados de captura y vida — nivel básico a intermedio
 schedulerType: sm2
+icon: tsumego
 ---
 
 ## Problema 001

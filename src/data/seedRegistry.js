@@ -26,7 +26,11 @@ function metaFromMarkdown(raw) {
       meta[line.slice(0, i).trim()] = line.slice(i + 1).trim()
     }
   }
-  return { name: meta.name ?? 'Sin nombre', description: meta.description ?? '' }
+  return {
+    name:        meta.name        ?? 'Sin nombre',
+    description: meta.description ?? '',
+    icon:        meta.icon        ?? null,
+  }
 }
 
 export async function buildSeedRegistry() {
@@ -46,11 +50,12 @@ export async function buildSeedRegistry() {
   }
 
   for (const [path, loader] of Object.entries(markdownLoaders)) {
-    const raw = await loader()
+    const raw  = await loader()
+    const meta = metaFromMarkdown(raw)
     entries.push({
       id: pathToId(path),
-      ...metaFromMarkdown(raw),
-      icon: ICONS[iconIdx++ % ICONS.length],
+      ...meta,
+      icon: meta.icon ?? ICONS[iconIdx++ % ICONS.length],
       format: 'markdown',
       data: raw,
     })
