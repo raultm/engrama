@@ -14,6 +14,8 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: 'node',
     globals: true,
+    include: ['src/tests/**/*.test.js'],
+    exclude: ['e2e/**', 'node_modules/**'],
   },
 
   optimizeDeps: {
