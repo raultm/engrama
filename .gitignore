@@ -8,3 +8,7 @@ public/sql-wasm-browser.wasm
 public/sql-wasm-browser.js
 
 sgf/*
+
+# Playwright
+/playwright-report/
+/test-results/

@@ -163,7 +163,7 @@ export function SeedSelectionView(rootEl, seedRegistry) {
           <p class="seed-section-desc">Prueba diferentes tipos de tarjeta antes de importar tu propio contenido</p>
 
           <button class="seed-option seed-option--demo ${installedIds.has('tsumego-basicos') ? 'seed-option--installed' : ''} ${'tsumego-basicos' === activeId ? 'seed-option--active' : ''}"
-            id="btn-demo-tsumego" aria-label="Demo: problemas de Go">
+            id="btn-demo-tsumego">
             <span class="seed-option__icon">${ICON_MAP.tsumego}</span>
             <div class="seed-option__text">
               <span class="seed-option__name">Tsumego básicos</span>
@@ -173,7 +173,7 @@ export function SeedSelectionView(rootEl, seedRegistry) {
           </button>
 
           <button class="seed-option seed-option--demo ${installedIds.has('test-atmosfera') ? 'seed-option--installed' : ''} ${'test-atmosfera' === activeId ? 'seed-option--active' : ''}"
-            id="btn-demo-atmosfera" aria-label="Demo: oclusión de imagen">
+            id="btn-demo-atmosfera">
             <span class="seed-option__icon">${ICON_DEMO}</span>
             <div class="seed-option__text">
               <span class="seed-option__name">Capas de la Atmósfera</span>
@@ -183,7 +183,7 @@ export function SeedSelectionView(rootEl, seedRegistry) {
           </button>
 
           <button class="seed-option seed-option--demo ${installedIds.has('tsumego-ejemplo') ? 'seed-option--installed' : ''} ${'tsumego-ejemplo' === activeId ? 'seed-option--active' : ''}"
-            id="btn-demo-tsumego-md" aria-label="Demo: tsumego desde markdown">
+            id="btn-demo-tsumego-md">
             <span class="seed-option__icon">${ICON_MAP.tsumego}</span>
             <div class="seed-option__text">
               <span class="seed-option__name">Tsumego desde Markdown</span>
