@@ -2,6 +2,29 @@
 
 ## Pendiente
 
+### Tsumegos - añadir titulo
+
+Me permite corregirlo o añadir comentarios, ¿despues se actualizaria el contenido sin modificar el estado de estudio, no?
+
+Creo que el titulo ahora que hemos dejado todo mas organizado puede quedar bien, quizas mostrarlo en el footer, o encima del goban centrado, o como lo tienen las otras tarjetas, lo que creas oportuno.
+
+TRas implementarlo lo probaré en movil
+
+### PWA - Consderaciones
+
+Como voy a motivar a la gente a instalarlo como PWA y no conozco mucho el tema.
+
+- Proponme cosas interesante que puede tener por estar así
+- Problemas que pueden surgir, como ese que no actulizac version
+- Otras cosas curiosas (notificaciones, ...)
+
+### Tags - Ahora es un OR, poder cambiar a AND
+
+Quiero tarjetas que tengan variaas tags ¿crees que es interesante? se podría hacer visualmente entendible, tal y como estan ahora las tags me encanta como se usa
+
+
+## Teminado 
+
 ### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
 
 Devolverlos

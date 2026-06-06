@@ -18,7 +18,7 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
 
       // Incluir los binarios de sql.js que están en public/
-      includeAssets: ['favicon.svg', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-512.png', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm'],
 
       workbox: {
         // sql-wasm-browser.wasm supera el límite por defecto de 2MB
@@ -43,7 +43,18 @@ export default defineConfig(({ command }) => ({
             src: '/favicon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
-            purpose: 'any',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
           },
         ],
       },

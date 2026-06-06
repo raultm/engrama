@@ -6,6 +6,7 @@ import { buildSeedRegistry } from '../../data/seedRegistry.js'
 import { escapeHtml } from '../utils/html.js'
 import { SeedSelectionView } from './SeedSelectionView.js'
 import { RANKS, getRank } from '../../domain/ranks.js'
+import { checkForUpdate } from '../utils/swUpdate.js'
 
 export function HomeView(rootEl) {
   const { studySessionService, userProfileRepository, syncService } = getContainer()
@@ -58,6 +59,13 @@ export function HomeView(rootEl) {
               <line x1="7" y1="7" x2="7.01" y2="7"/>
             </svg>
           </button>` : ''}
+          <button class="btn btn--ghost btn--icon btn--sm" id="btn-update" aria-label="Buscar actualización" title="Buscar actualización">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
           <button class="btn btn--ghost btn--icon btn--sm" id="btn-theme" aria-label="Cambiar tema">${getTheme() === 'dark' ? '☀' : '☾'}</button>
           <button class="btn btn--ghost btn--icon btn--sm" id="btn-stats" aria-label="Estadísticas">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -172,6 +180,20 @@ export function HomeView(rootEl) {
       rootEl.querySelector('#btn-tags')?.setAttribute('aria-expanded', 'true')
     })
   }
+
+  rootEl.querySelector('#btn-update').addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    btn.disabled = true
+    btn.style.opacity = '0.5'
+    const result = await checkForUpdate()
+    if (result === 'updating') return  // vite-pwa hará location.reload() automáticamente
+    const msg = result === 'no-sw' || result === 'unsupported'
+      ? 'No disponible en desarrollo'
+      : '✓ Ya tienes la última versión'
+    btn.title = msg
+    btn.style.opacity = ''
+    setTimeout(() => { btn.disabled = false; btn.title = 'Buscar actualización' }, 3000)
+  })
 
   rootEl.querySelector('#btn-theme').addEventListener('click', () => {
     toggleTheme()
