@@ -199,9 +199,19 @@ export function HomeView(rootEl) {
     btn.disabled = true
     btn.style.opacity = '0.5'
     const result = await checkForUpdate()
-    if (result === 'updating') return  // vite-pwa hará location.reload() automáticamente
+    if (result === 'updating') {
+      // La página debería recargar sola; si no lo hace en 5s, re-habilitar el botón
+      setTimeout(() => {
+        btn.style.opacity = ''
+        btn.disabled = false
+        btn.title = 'Buscar actualización'
+      }, 5000)
+      return
+    }
     const msg = result === 'no-sw' || result === 'unsupported'
       ? 'No disponible en desarrollo'
+      : result === 'error'
+      ? 'Error de red — inténtalo de nuevo'
       : '✓ Ya tienes la última versión'
     btn.title = msg
     btn.style.opacity = ''
