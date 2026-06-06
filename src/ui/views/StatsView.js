@@ -97,6 +97,8 @@ export function StatsView(rootEl) {
           <button class="btn--danger-full" id="btn-reset" style="opacity:0.6;font-size:12px">Borrar toda la base de datos</button>
         </div>
 
+        <p class="app-version">v${__APP_VERSION__}</p>
+
       </main>
     </div>
   `

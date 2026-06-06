@@ -1445,6 +1445,14 @@ body.study-active #app {
 
 .summary-actions { display: flex; gap: 12px; justify-content: center; }
 
+.app-version {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  margin-top: 32px;
+}
+
 /* ===== STATS VIEW ===== */
 .stats-main {
   padding: 24px;
