@@ -16,6 +16,7 @@ export function HomeView(rootEl) {
   const streak  = studySessionService.getStreak()
   const availableTags  = studySessionService.getAvailableTags()
   const selectedTags   = studySessionService.getSelectedTags()
+  const tagMode        = studySessionService.getTagMode()
   const hasTags        = availableTags.length > 0
   const hasTagFilter   = selectedTags.length > 0
   const canStudy = stats.due > 0
@@ -82,6 +83,10 @@ export function HomeView(rootEl) {
         ${availableTags.map(t => `
           <button class="tag-pill ${selectedTags.includes(t) ? 'tag-pill--active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>
         `).join('')}
+        ${selectedTags.length > 1 ? `
+        <button class="tag-mode-toggle ${tagMode === 'and' ? 'tag-mode-toggle--and' : ''}" id="btn-tag-mode" title="${tagMode === 'and' ? 'Modo AND: tarjetas con todos los tags' : 'Modo OR: tarjetas con algún tag'}">
+          ${tagMode === 'and' ? 'AND' : 'OR'}
+        </button>` : ''}
       </div>` : ''}
 
       <main class="home-main">
@@ -162,6 +167,14 @@ export function HomeView(rootEl) {
     })
 
     tagPanel.addEventListener('click', (e) => {
+      const modeBtn = e.target.closest('#btn-tag-mode')
+      if (modeBtn) {
+        studySessionService.setTagMode(studySessionService.getTagMode() === 'and' ? 'or' : 'and')
+        HomeView(rootEl)
+        rootEl.querySelector('#tag-panel')?.removeAttribute('hidden')
+        rootEl.querySelector('#btn-tags')?.setAttribute('aria-expanded', 'true')
+        return
+      }
       const pill = e.target.closest('[data-tag], #btn-all-tags')
       if (!pill) return
       if (pill.id === 'btn-all-tags') {

@@ -257,7 +257,7 @@ kbd {
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  padding: 20px 24px;
+  padding: max(20px, env(safe-area-inset-top)) 24px 20px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -328,6 +328,23 @@ kbd {
   border-color: var(--color-primary);
   color: var(--color-bg);
   font-weight: 500;
+}
+
+.tag-mode-toggle {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.tag-mode-toggle--and {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .engrama-selector select {
@@ -679,7 +696,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 24px;
+  padding: max(16px, env(safe-area-inset-top)) 24px 16px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   position: sticky;
@@ -928,7 +945,7 @@ body.study-active #app {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 24px;
+  padding: max(16px, env(safe-area-inset-top)) 24px 16px;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
@@ -1213,6 +1230,16 @@ body.study-active #app {
 .tsumego-ptm--white   { background: #f0ece0; color: #333; border: 1px solid #ccc; }
 .tsumego-ptm--correct { background: var(--color-perfect); color: #fff; }
 .tsumego-ptm--wrong   { background: var(--color-forgotten); color: #fff; }
+
+.tsumego-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
 
 .tsumego-comment {
   font-size: 13px;
@@ -1628,7 +1655,7 @@ body.study-active #app {
   .app-header { padding: 12px 16px; }
   .home-main, .collection-main, .stats-main { padding: 16px; }
 
-  .home-header { flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
+  .home-header { flex-wrap: wrap; gap: 8px; padding: max(14px, env(safe-area-inset-top)) 16px 14px; }
   .home-header__logo { order: 1; flex: 1; }
   .home-header__actions { order: 2; margin-left: auto; }
   .engrama-selector { order: 3; flex: 0 0 100%; margin-left: 0; }

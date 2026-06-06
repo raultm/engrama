@@ -83,7 +83,8 @@ export class MarkdownSeedParser {
                 blackStones:  parsed.blackStones,
                 whiteStones:  parsed.whiteStones,
                 playerToMove: parsed.playerToMove,
-                comment:      parsed.comment || title,
+                comment:      parsed.comment || '',
+                title:        title || '',
               },
             }
           } catch {

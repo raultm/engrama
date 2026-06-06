@@ -14,8 +14,8 @@ export class TsumegoCardStrategy extends CardStrategy {
 
   async renderQuestion(card) {
     this._ctrl = null
-    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
-    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { interactive: true })
+    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment, title } = card.extraData
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { interactive: true }, title || card.frontText)
   }
 
   // Tsumego no usa el footer estándar — el flujo es obligatorio
@@ -32,11 +32,12 @@ export class TsumegoCardStrategy extends CardStrategy {
   }
 
   async renderAnswer(card) {
-    if (this._ctrl?.mode === 'review') return _reviewHtml(this._ctrl)
+    const title = card.extraData.title || card.frontText
+    if (this._ctrl?.mode === 'review') return _reviewHtml(this._ctrl, title)
     const tmpCtrl = new TsumegoController({ ...card.extraData })
     const { correctMoves } = tmpCtrl.getAnnotations()
     const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
-    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves })
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves }, title)
   }
 
   postReveal(card, containerEl) {
@@ -48,12 +49,13 @@ export class TsumegoCardStrategy extends CardStrategy {
 
 // ── Construcción de HTML ──────────────────────────────────────────────────────
 
-function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, boardOpts = {}) {
+function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, boardOpts = {}, title = '') {
   const ptmClass = playerToMove === 'W' ? 'tsumego-ptm--white' : 'tsumego-ptm--black'
   const ptmText  = playerToMove === 'W' ? '⚪ Blancas juegan'  : '⚫ Negras juegan'
   const board = renderGoBoard({ boardSize, blackStones, whiteStones, playerToMove, ...boardOpts })
 
-  return `<div class="tsumego-board" id="tsumego-live">${board}</div>
+  return `${title ? `<p class="tsumego-title">${escapeHtml(title)}</p>` : ''}
+    <div class="tsumego-board" id="tsumego-live">${board}</div>
     <span class="tsumego-ptm ${ptmClass}" id="tsumego-ptm">${ptmText}</span>
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav" hidden>
@@ -66,7 +68,7 @@ function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, 
     <p class="tsumego-comment" id="tsumego-comment">${escapeHtml(comment ?? '')}</p>`
 }
 
-function _reviewHtml(ctrl) {
+function _reviewHtml(ctrl, title = '') {
   const { blackStones, whiteStones }                              = ctrl.getBoardState()
   const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
   const board = renderGoBoard({
@@ -83,7 +85,8 @@ function _reviewHtml(ctrl) {
                  : ctrl.result === 'wrong'   ? '✗ Incorrecto'
                  : (ctrl.currentMover() === 'W' ? '⚪ Blancas juegan' : '⚫ Negras juegan')
 
-  return `<div class="tsumego-board" id="tsumego-live">${board}</div>
+  return `${title ? `<p class="tsumego-title">${escapeHtml(title)}</p>` : ''}
+    <div class="tsumego-board" id="tsumego-live">${board}</div>
     <span class="tsumego-ptm ${ptmClass}" id="tsumego-ptm">${ptmText}</span>
     <div class="tsumego-timer" id="tsumego-timer"></div>
     <div class="tsumego-nav" id="tsumego-nav">

@@ -52,21 +52,31 @@ export class StudySessionService {
     }
   }
 
+  getTagMode() {
+    return this._db.getSetting('tag_mode') ?? 'or'
+  }
+
+  setTagMode(mode) {
+    this._db.setSetting('tag_mode', mode === 'and' ? 'and' : 'or')
+  }
+
+  _applyTagFilter(cards) {
+    const tags = this.getSelectedTags()
+    if (tags.length === 0) return cards
+    return this.getTagMode() === 'and'
+      ? cards.filter(c => tags.every(t => (c.tags ?? []).includes(t)))
+      : cards.filter(c => (c.tags ?? []).some(t => tags.includes(t)))
+  }
+
   startGlobalSession() {
     const currentProfile = this._profileRepo.getOrCreate()
     const maxElo  = currentProfile.eloRating + 200   // ventana de acceso: ELO actual + 200
-
-    const selectedTags = this.getSelectedTags()
 
     const tree = this._collectionRepo.buildTree()
     let allCards = tree.flatMap(col => col.getAllFlashCardsRecursive())
       .filter(c => c.eloDifficulty <= maxElo)  // solo tarjetas accesibles
 
-    if (selectedTags.length > 0) {
-      allCards = allCards.filter(c =>
-        (c.tags ?? []).some(t => selectedTags.includes(t))
-      )
-    }
+    allCards = this._applyTagFilter(allCards)
 
     const scheduler = schedulerRegistry.getDefault()
     const cards = scheduler.selectCards(allCards)
@@ -97,10 +107,7 @@ export class StudySessionService {
     const inaccessible = allCards.filter(c => c.eloDifficulty >  maxElo)
 
     // Aplicar filtro de tags si hay alguno activo
-    const selectedTags = this.getSelectedTags()
-    const filtered = selectedTags.length > 0
-      ? accessible.filter(c => (c.tags ?? []).some(t => selectedTags.includes(t)))
-      : accessible
+    const filtered = this._applyTagFilter(accessible)
 
     // Próximos hitos: ELOs de tarjetas aún no accesibles
     const inaccessByElo = inaccessible.reduce((acc, c) => {
