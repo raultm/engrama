@@ -2,6 +2,12 @@
 
 ## Pendiente
 
+### No mostrar pistas en tsumegos hasta finalizar secuencia
+
+A veces una respuesta correcta es una secuencia de movimientos, no mostrar correcto/incorreto ni pistas(puntos verdes/grises) hasta que se haya completado los movimientos de la serie totalmente 
+
+## Teminado 
+
 ### Tsumegos - añadir titulo
 
 Me permite corregirlo o añadir comentarios, ¿despues se actualizaria el contenido sin modificar el estado de estudio, no?
@@ -23,7 +29,6 @@ Como voy a motivar a la gente a instalarlo como PWA y no conozco mucho el tema.
 Quiero tarjetas que tengan variaas tags ¿crees que es interesante? se podría hacer visualmente entendible, tal y como estan ahora las tags me encanta como se usa
 
 
-## Teminado 
 
 ### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
 

@@ -201,10 +201,19 @@ return this.result
 
   _computeAllNeutral() {
     if (!this._tree?.children?.length) return true
-    return this._tree.children.every(c => {
-      const comment = (c.props.get('C') ?? [])[0] ?? ''
-      return !CORRECT_RE.test(comment) && !WRONG_RE.test(comment)
-    })
+
+    // Recorre todo el árbol: los marcadores RIGHT/WRONG pueden aparecer varios
+    // movimientos más adentro, no solo en las variaciones de primer nivel.
+    // Si se mirara solo el primer nivel, un árbol con marcas profundas se
+    // confundiría con uno "sin marcar" y se aplicaría mal el respaldo
+    // "primera variación = correcta".
+    const hasMarker = (node) => {
+      const comment = (node.props.get('C') ?? [])[0] ?? ''
+      if (CORRECT_RE.test(comment) || WRONG_RE.test(comment)) return true
+      return (node.children ?? []).some(hasMarker)
+    }
+
+    return !this._tree.children.some(hasMarker)
   }
 
   _truncate() {

@@ -152,17 +152,23 @@ function _attachSolve(containerEl, ctrl, onReveal) {
   const redraw = () => {
     const el = boardEl()
     if (!el) return
-    const { blackStones, whiteStones }                              = ctrl.getBoardState()
+    const solving = ctrl.mode === 'solve'
+    const { blackStones, whiteStones } = ctrl.getBoardState()
     const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
+    // Mientras se resuelve no se muestran pistas (círculos) ni el comentario del nodo:
+    // una secuencia correcta puede tener varios pasos y revelarían la respuesta a mitad de camino.
     el.innerHTML = renderGoBoard({
       boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
       blackStones, whiteStones,
-      lastMove, correctMoves, wrongMoves, neutralMoves,
-      interactive: ctrl.mode === 'solve',
+      lastMove,
+      correctMoves: solving ? [] : correctMoves,
+      wrongMoves:   solving ? [] : wrongMoves,
+      neutralMoves: solving ? [] : neutralMoves,
+      interactive: solving,
     })
     const cEl = commentEl()
-    if (cEl) cEl.textContent = comment
-    if (ctrl.mode === 'solve') attachTargets()
+    if (cEl) cEl.textContent = solving ? '' : comment
+    if (solving) attachTargets()
   }
 
   const attachTargets = () => {
