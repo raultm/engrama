@@ -311,14 +311,14 @@ describe('TsumegoController — navegación review', () => {
   })
 })
 
-describe('TsumegoController — _allNeutral', () => {
-  it('_allNeutral=true cuando ninguna variación tiene marcadores', () => {
+describe('TsumegoController — clasificación sin marcadores explícitos', () => {
+  it('_treeHasMarkers=false cuando ninguna variación tiene marcadores', () => {
     const sgf = '(;SZ[9]PL[B]AB[aa](;B[bb])(;B[cc]))'
     const ctrl = makeCtrl(sgf)
-    expect(ctrl._allNeutral).toBe(true)
+    expect(ctrl._treeHasMarkers).toBe(false)
   })
 
-  it('con _allNeutral=true, el primer hijo se clasifica como correct', () => {
+  it('sin marcadores, la línea principal (primera variación) se clasifica como correct', () => {
     const sgf = '(;SZ[9]PL[B]AB[aa](;B[bb])(;B[cc]))'
     const ctrl = makeCtrl(sgf)
     const ann = ctrl.getAnnotations()
@@ -326,9 +326,22 @@ describe('TsumegoController — _allNeutral', () => {
     expect(ann.neutralMoves).toContain('cc')
   })
 
-  it('_allNeutral=false cuando hay marcadores en alguna variación', () => {
+  it('_treeHasMarkers=true cuando hay marcadores en alguna variación', () => {
     const ctrl = makeCtrl(SIMPLE_SGF)
-    expect(ctrl._allNeutral).toBe(false)
+    expect(ctrl._treeHasMarkers).toBe(true)
+  })
+
+  it('un marcador solo en el nodo final ilumina también los pasos previos del camino', () => {
+    // La secuencia principal (bb -> dd) solo lleva "Correct!" en el nodo final;
+    // el paso intermedio (bb) no tiene comentario propio pero debe heredar
+    // la clasificación de su línea principal, no quedar en 'neutral'.
+    const sgf = '(;SZ[9]PL[B]AB[aa]' +
+      '(;B[bb];W[cc];B[dd]C[Correct!])' +
+      '(;B[ee]C[Wrong]))'
+    const ctrl = makeCtrl(sgf)
+    const first = ctrl.getAnnotations()
+    expect(first.correctMoves).toContain('bb')
+    expect(first.wrongMoves).toContain('ee')
   })
 })
 

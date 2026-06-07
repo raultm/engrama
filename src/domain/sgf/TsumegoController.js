@@ -5,13 +5,12 @@ import { parseSgfTree, findVariation, nodeMove } from './SgfTree.js'
 const CORRECT_RE = /correct|right|good|○|◯|正解|✓|seikai/i
 const WRONG_RE   = /wrong|incorrect|bad|✕|×|fail|mistake|失敗|悪手/i
 
-function classifyChild(child, index, allNeutral) {
-  const comment = (child.props.get('C') ?? [])[0] ?? ''
+// Clasificación basada solo en el comentario propio del nodo (sin heurísticas de árbol)
+function ownClassification(node) {
+  const comment = (node.props.get('C') ?? [])[0] ?? ''
   if (CORRECT_RE.test(comment)) return 'correct'
   if (WRONG_RE.test(comment))   return 'wrong'
-  // Convención: si ningún nodo tiene marcador, el primer hijo es correcto
-  if (allNeutral && index === 0) return 'correct'
-  return 'neutral'
+  return null
 }
 
 /**
@@ -26,8 +25,9 @@ export class TsumegoController {
     this.boardSize    = boardSize
     this.playerToMove = playerToMove
 
-    this._tree       = sgf ? parseSgfTree(sgf) : null
-    this._allNeutral = this._computeAllNeutral()
+    this._tree           = sgf ? parseSgfTree(sgf) : null
+    this._treeHasMarkers = this._computeTreeHasMarkers()
+    this._mainLine       = this._computeMainLine()
 
     // Historial: snapshot[i] = tablero tras i movimientos
     const initBoard = {}
@@ -69,10 +69,10 @@ export class TsumegoController {
     const correct = [], wrong = [], neutral = []
 
     if (node && !this.freeMode) {
-      ;(node.children ?? []).forEach((child, i) => {
+      ;(node.children ?? []).forEach((child) => {
         const m = nodeMove(child)
         if (!m) return
-        const cls = classifyChild(child, i, this._allNeutral)
+        const cls = this._resolveClassification(child)
         if      (cls === 'correct') correct.push(m.coord)
         else if (cls === 'wrong')   wrong.push(m.coord)
         else                        neutral.push(m.coord)
@@ -96,8 +96,7 @@ export class TsumegoController {
       const { child } = findVariation(node, coord, color)
       if (child) {
         childNode = child
-        const idx = node.children.indexOf(child)
-        classification = classifyChild(child, idx, this._allNeutral)
+        classification = this._resolveClassification(child)
       } else {
         classification = 'wrong_unknown'
         this.freeMode  = true
@@ -199,21 +198,35 @@ return this.result
     return color
   }
 
-  _computeAllNeutral() {
-    if (!this._tree?.children?.length) return true
+  // Clasifica un nodo según su comentario propio; si no tiene marcador,
+  // hereda la clasificación de su primera variación (línea principal),
+  // de modo que un marcador profundo (p.ej. solo en el nodo final de una
+  // secuencia) "ilumina" en verde/rojo todos los pasos previos del camino
+  // que conduce a él — y no solo el último movimiento.
+  _resolveClassification(node) {
+    const own = ownClassification(node)
+    if (own) return own
+    if (node.children?.length) return this._resolveClassification(node.children[0])
+    // Hoja sin marcador: si en todo el árbol no hay ninguna anotación
+    // RIGHT/WRONG, la convención es que la línea principal (siempre la
+    // primera variación en cada bifurcación) es la respuesta correcta.
+    return (!this._treeHasMarkers && this._mainLine.has(node)) ? 'correct' : 'neutral'
+  }
 
-    // Recorre todo el árbol: los marcadores RIGHT/WRONG pueden aparecer varios
-    // movimientos más adentro, no solo en las variaciones de primer nivel.
-    // Si se mirara solo el primer nivel, un árbol con marcas profundas se
-    // confundiría con uno "sin marcar" y se aplicaría mal el respaldo
-    // "primera variación = correcta".
-    const hasMarker = (node) => {
-      const comment = (node.props.get('C') ?? [])[0] ?? ''
-      if (CORRECT_RE.test(comment) || WRONG_RE.test(comment)) return true
-      return (node.children ?? []).some(hasMarker)
-    }
+  // true si existe algún marcador RIGHT/WRONG en cualquier punto del árbol
+  // (no solo en las variaciones de primer nivel, donde rara vez aparecen).
+  _computeTreeHasMarkers() {
+    if (!this._tree?.children?.length) return false
+    const check = (node) => ownClassification(node) !== null || (node.children ?? []).some(check)
+    return this._tree.children.some(check)
+  }
 
-    return !this._tree.children.some(hasMarker)
+  // Conjunto de nodos alcanzados siguiendo siempre la primera variación desde la raíz
+  _computeMainLine() {
+    const set = new Set()
+    let node = this._tree
+    while (node) { set.add(node); node = node.children?.[0] ?? null }
+    return set
   }
 
   _truncate() {
