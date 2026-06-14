@@ -22,14 +22,15 @@ export class FlashCardRepository {
       `INSERT OR REPLACE INTO flashcards
        (id, collection_id, front_text, back_text, card_type, extra_data,
         elo_difficulty, created_at, updated_at,
-        scheduler_data, tags, prerequisites, is_unlocked)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        scheduler_data, tags, prerequisites, is_unlocked, muted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         card.id, card.collectionId, card.frontText, card.backText,
         card.cardType ?? 'basic', JSON.stringify(card.extraData ?? {}),
         card.eloDifficulty, card.createdAt, card.updatedAt,
         JSON.stringify(card.schedulerData), JSON.stringify(card.tags),
         JSON.stringify(card.prerequisites), card.isUnlocked ? 1 : 0,
+        card.muted ? 1 : 0,
       ]
     )
     return card
@@ -70,6 +71,7 @@ export class FlashCardRepository {
       tags: row.tags,
       prerequisites: row.prerequisites,
       isUnlocked: row.is_unlocked,
+      muted: row.muted,
     })
   }
 }

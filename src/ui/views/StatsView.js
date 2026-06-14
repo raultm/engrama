@@ -15,8 +15,8 @@ export function StatsView(rootEl) {
   const unlockPct = Math.round((stats.unlockedCount / stats.total) * 100)
 
   const nextMilestone = stats.lockedMilestones[0]
-  // La tarjeta se vuelve accesible cuando ELO_usuario + 200 >= card.eloDifficulty
-  const eloNeeded = nextMilestone ? Math.max(0, nextMilestone.elo - (profile.eloRating + 200)) : 0
+  // La tarjeta se vuelve accesible cuando ELO_usuario + margen >= card.eloDifficulty
+  const eloNeeded = nextMilestone ? Math.max(0, nextMilestone.elo - (profile.eloRating + stats.eloMargin)) : 0
 
   rootEl.innerHTML = `
     <div class="view stats-view">
@@ -73,6 +73,15 @@ export function StatsView(rootEl) {
           `}
         </div>
 
+        <section class="settings-section">
+          <h2>Ajustes</h2>
+          <div class="setting-row">
+            <label for="elo-margin-input">Margen de acceso ELO</label>
+            <input type="number" id="elo-margin-input" class="setting-input" min="0" max="1000" step="50" value="${stats.eloMargin}">
+          </div>
+          <p class="setting-hint">Puedes acceder a tarjetas con dificultad hasta tu ELO + este margen. Un margen mayor te muestra tarjetas más difíciles antes.</p>
+        </section>
+
         <div class="session-history">
           <h2>Historial de sesiones</h2>
           ${_renderEloChart(sessions)}
@@ -104,6 +113,14 @@ export function StatsView(rootEl) {
   `
 
   rootEl.querySelector('#btn-back').addEventListener('click', () => navigate('/'))
+
+  rootEl.querySelector('#elo-margin-input').addEventListener('change', (e) => {
+    const val = parseInt(e.target.value, 10)
+    if (Number.isFinite(val)) {
+      studySessionService.setEloMargin(val)
+      StatsView(rootEl)
+    }
+  })
 
   rootEl.querySelector('#deadline-input').addEventListener('change', (e) => {
     const val = e.target.value

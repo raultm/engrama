@@ -116,10 +116,46 @@ describe('StudySession — re-encola', () => {
     expect(pos).toBeLessThanOrEqual(2)
   })
 
-  it('NO re-encola cuando la cola queda vacía', () => {
+  it('re-encola la última tarjeta si falla y aún hay reintentos (la sesión no termina)', () => {
     const s = makeSession([makeCard('c1')])
     const updated = s.recordResult('c1', 0, makeCard('c1'), -10)
+    expect(updated.isFinished).toBe(false)
+    expect(updated.queue.some(c => c.id === 'c1')).toBe(true)
+  })
+
+  it('termina la sesión si la última tarjeta falla tras agotar los reintentos', () => {
+    let s = makeSession([makeCard('c1')])
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // re-encola (1/2)
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // re-encola (2/2)
+    s = s.recordResult('c1', 0, makeCard('c1'), -10) // reintentos agotados
+    expect(s.isFinished).toBe(true)
+  })
+})
+
+// ── Silenciar tarjeta ─────────────────────────────────────────────────────
+
+describe('StudySession — muteCurrentCard', () => {
+  it('quita la tarjeta actual de la cola y del total, sin registrar resultado', () => {
+    const cards = [makeCard('c1'), makeCard('c2'), makeCard('c3')]
+    const s = makeSession(cards)
+    const updated = s.muteCurrentCard()
+    expect(updated.queue.some(c => c.id === 'c1')).toBe(false)
+    expect(updated.cards.some(c => c.id === 'c1')).toBe(false)
+    expect(updated.cards.length).toBe(2)
+    expect(updated.results).toEqual([])
+  })
+
+  it('termina la sesión si la tarjeta silenciada era la última', () => {
+    const s = makeSession([makeCard('c1')])
+    const updated = s.muteCurrentCard()
     expect(updated.isFinished).toBe(true)
+    expect(updated.status).toBe(SessionStatus.COMPLETED)
+  })
+
+  it('no hace nada si no hay tarjeta actual', () => {
+    const s = makeSession([])
+    const updated = s.muteCurrentCard()
+    expect(updated).toBe(s)
   })
 })
 

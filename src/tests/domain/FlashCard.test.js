@@ -18,6 +18,17 @@ describe('FlashCard', () => {
     expect(card.isUnlocked).toBe(true)
     expect(card.tags).toEqual([])
     expect(card.schedulerData).toEqual({})
+    expect(card.muted).toBe(false)
+  })
+
+  it('muted se normaliza desde el valor entero almacenado en SQLite', () => {
+    expect(makeCard({ muted: 1 }).muted).toBe(true)
+    expect(makeCard({ muted: 0 }).muted).toBe(false)
+  })
+
+  it('update({ muted: true }) silencia la tarjeta', () => {
+    const card = makeCard().update({ muted: true })
+    expect(card.muted).toBe(true)
   })
 
   it('isNew() returns true when no repetitions', () => {

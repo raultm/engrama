@@ -2,11 +2,34 @@
 
 ## Pendiente
 
+### TEmas de SGF (anotas/marcas)
+
+En algunos tsumegos que me he descargado en los comentarios vienen comentarios sobre grupos de piedras u opciones para poner piedras, esas cosas no se visualizan, crees que podrías mejorar el editor sgf para añadirlo?
+
+## Teminado 
+
+### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
+
+A veces en mazos que se importan el usuario no quiere que le vuelva a salir una tarjeta, o marcarla de alguna manera para que no salga.
+
+¿por qué? quizas la tarjeta esta simplemente mal, o porque cree que por ahora no tiene el nivel que requiere para responderla.
+
+Durante la visualizacion de la tarjeta poder marcarla de alguna manera y que no vuelva a salir. Quizas en el futuro podamos mostrarle al usuario estar tarjetas "silenciadas" y que pueda reactivarlas, pero por ahora eso no.
+
+Lo que si es importante es que al seleccionar para silenciar, aparezca un modal para confirmar la accion, en esa sesion de estudio ya nos olvidamos de ella.
+
+### Gestion de cartas con respecto al ELO
+
+Hasta ahora hemos definido que el usuario tiene un ELO y solo va a poder acceder a ciertas tarjetas del mazo que no superen su ELO mas un margen, ese margen ahora es fijo, pero quiero que ahora en la parte de ajustes ahora se pueda cambiar el valor de ese rango.
+
+### Tarjetas marcada como Olvidada o Mal
+
+Cuando se marca una tarjeta como olvidada se pone dos posiciones mas adelante, y en general el funcionamiento es correcto, pero alguna vez me ha pasado que la ultima tarjeta de la sesion es olvidada y la sesion se acaba. Este comportamiento no me gusta, no se exactamente la razon, pero al poner dos mas adelante parece que hay un mal funcionamiento.
+
 ### No mostrar pistas en tsumegos hasta finalizar secuencia
 
 A veces una respuesta correcta es una secuencia de movimientos, no mostrar correcto/incorreto ni pistas(puntos verdes/grises) hasta que se haya completado los movimientos de la serie totalmente 
 
-## Teminado 
 
 ### Tsumegos - añadir titulo
 
@@ -75,7 +98,8 @@ enablePlay 	False
 ## Notas de diseño
 
 ### Sistema de acceso (ya implementado)
-El usuario solo accede a tarjetas con `eloDifficulty ≤ userElo + 200`.
+El usuario solo accede a tarjetas con `eloDifficulty ≤ userElo + margen`.
+El margen es configurable desde Estadísticas (por defecto 200).
 No hay tarjetas "bloqueadas" manualmente — el acceso es dinámico.
 Si un mazo tiene pocas tarjetas de nivel bajo y muchas de nivel alto,
 el usuario subirá de ELO despacio. Eso es un problema del diseño del

@@ -5,6 +5,8 @@ import { generateId } from '../../infrastructure/utils/generateId.js'
 
 const DEADLINE_KEY        = 'master_deadline'
 const DEFAULT_DEADLINE_MS = 7 * 24 * 3_600_000   // 1 semana
+const ELO_MARGIN_KEY      = 'elo_margin'
+const DEFAULT_ELO_MARGIN  = 200
 
 export class StudySessionService {
   constructor({ db, collectionRepository, flashCardRepository, userProfileRepository, studySessionRepository }) {
@@ -29,6 +31,14 @@ export class StudySessionService {
       const deadline = new Date(Date.now() + DEFAULT_DEADLINE_MS)
       this.setMasterDeadline(deadline)
     }
+  }
+
+  getEloMargin() {
+    return parseInt(this._db.getSetting(ELO_MARGIN_KEY) ?? String(DEFAULT_ELO_MARGIN), 10)
+  }
+
+  setEloMargin(margin) {
+    this._db.setSetting(ELO_MARGIN_KEY, String(Math.max(0, Math.round(margin))))
   }
 
   getAvailableTags() {
@@ -70,11 +80,12 @@ export class StudySessionService {
 
   startGlobalSession() {
     const currentProfile = this._profileRepo.getOrCreate()
-    const maxElo  = currentProfile.eloRating + 200   // ventana de acceso: ELO actual + 200
+    const maxElo  = currentProfile.eloRating + this.getEloMargin()   // ventana de acceso
 
     const tree = this._collectionRepo.buildTree()
     let allCards = tree.flatMap(col => col.getAllFlashCardsRecursive())
       .filter(c => c.eloDifficulty <= maxElo)  // solo tarjetas accesibles
+      .filter(c => !c.muted)                   // sin las silenciadas
 
     allCards = this._applyTagFilter(allCards)
 
@@ -97,12 +108,13 @@ export class StudySessionService {
   }
 
   getAllCardsStats() {
-    const allCards = this._cardRepo.findAll()
+    const eloMargin = this.getEloMargin()
+    const allCards = this._cardRepo.findAll().filter(c => !c.muted)
     const profile  = this._profileRepo.getOrCreate()
-    const maxElo   = profile.eloRating + 200
+    const maxElo   = profile.eloRating + eloMargin
     const now      = new Date()
 
-    // Tarjetas accesibles: ELO ≤ ELO_usuario + 200
+    // Tarjetas accesibles: ELO ≤ ELO_usuario + margen
     const accessible   = allCards.filter(c => c.eloDifficulty <= maxElo)
     const inaccessible = allCards.filter(c => c.eloDifficulty >  maxElo)
 
@@ -136,6 +148,7 @@ export class StudySessionService {
       lockedCount: inaccessible.length,
       nextUnlockElo: lockedMilestones[0]?.elo ?? null,
       lockedMilestones,
+      eloMargin,
       nextReviewAt,
       masterDeadline: this.getMasterDeadline(),
     }
@@ -173,6 +186,21 @@ export class StudySessionService {
     this._sessionRepo.save(updatedSession, updatedProfile.eloRating)
 
     return { session: updatedSession, userDelta, cardDelta }
+  }
+
+  // Silencia la tarjeta actual: no volverá a aparecer en futuras sesiones.
+  // En la sesión en curso, simplemente se descarta sin calificarla.
+  muteCurrentCard(session) {
+    const card = session.currentCard
+    if (!card) throw new Error('No current card')
+
+    this._cardRepo.save(card.update({ muted: true }))
+
+    const updatedSession = session.muteCurrentCard()
+    const profile = this._profileRepo.getOrCreate()
+    this._sessionRepo.save(updatedSession, profile.eloRating)
+
+    return { session: updatedSession }
   }
 
   getStreak() {
