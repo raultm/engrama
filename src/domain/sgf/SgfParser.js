@@ -9,6 +9,8 @@
  *   - Coordenadas SGF: dos letras minúsculas, columna + fila ('a'=1)
  */
 
+import { parseSgfTree, extractMarks, collectAllCoords } from './SgfTree.js'
+
 export function parseSgf(sgfText) {
   // Normalizar y limpiar
   const text = sgfText.replace(/\r\n/g, '\n').trim()
@@ -25,7 +27,13 @@ export function parseSgf(sgfText) {
   // Jugada correcta: primer movimiento de la primera variación
   const correctMoves = _findCorrectMoves(text, playerToMove)
 
-  return { boardSize, blackStones, whiteStones, playerToMove, correctMoves, comment }
+  // Marcas del nodo raíz (LB/CR/SQ/TR/MA) y todas las posiciones usadas en
+  // cualquier punto del árbol (piedras, jugadas y marcas de cualquier variación)
+  const tree = parseSgfTree(text)
+  const marks = extractMarks(tree)
+  const extentPoints = collectAllCoords(tree)
+
+  return { boardSize, blackStones, whiteStones, playerToMove, correctMoves, comment, marks, extentPoints }
 }
 
 // ── Helpers internos ────────────────────────────────────────────────────────

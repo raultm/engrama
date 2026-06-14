@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { GoEngine }                     from '../../domain/sgf/GoEngine.js'
-import { parseSgfTree, findVariation, nodeMove } from '../../domain/sgf/SgfTree.js'
+import { parseSgfTree, findVariation, nodeMove, extractMarks, collectAllCoords } from '../../domain/sgf/SgfTree.js'
 import { parseSgf }                     from '../../domain/sgf/SgfParser.js'
 import { TsumegoController }            from '../../domain/sgf/TsumegoController.js'
+import { renderGoBoard }                from '../../domain/sgf/GoBoard.js'
 
 // ── GoEngine ──────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,44 @@ describe('nodeMove', () => {
   })
 })
 
+describe('extractMarks', () => {
+  it('extrae etiquetas LB con su texto', () => {
+    const tree = parseSgfTree('(;SZ[9]LB[aa:A][bb:12])')
+    const marks = extractMarks(tree)
+    expect(marks.labels).toEqual([{ coord: 'aa', text: 'A' }, { coord: 'bb', text: '12' }])
+  })
+
+  it('extrae círculos, cuadrados, triángulos y cruces', () => {
+    const tree = parseSgfTree('(;SZ[9]CR[aa]SQ[bb]TR[cc]MA[dd])')
+    const marks = extractMarks(tree)
+    expect(marks.circles).toEqual(['aa'])
+    expect(marks.squares).toEqual(['bb'])
+    expect(marks.triangles).toEqual(['cc'])
+    expect(marks.crosses).toEqual(['dd'])
+  })
+
+  it('devuelve marcas vacías para un nodo sin anotaciones o null', () => {
+    const tree = parseSgfTree('(;SZ[9]AB[aa])')
+    expect(extractMarks(tree)).toEqual({ labels: [], circles: [], squares: [], triangles: [], crosses: [] })
+    expect(extractMarks(null)).toEqual({ labels: [], circles: [], squares: [], triangles: [], crosses: [] })
+  })
+})
+
+describe('collectAllCoords', () => {
+  it('incluye piedras iniciales, jugadas de todas las variaciones y marcas', () => {
+    const sgf = '(;SZ[9]AB[aa]AW[bb]LB[gg:A](;B[cc]CR[hh])(;B[dd]SQ[ii]))'
+    const tree = parseSgfTree(sgf)
+    const coords = collectAllCoords(tree)
+    expect(coords).toEqual(expect.arrayContaining(['aa', 'bb', 'gg', 'cc', 'hh', 'dd', 'ii']))
+  })
+
+  it('no duplica coordenadas repetidas', () => {
+    const sgf = '(;SZ[9]AB[aa]CR[aa])'
+    const tree = parseSgfTree(sgf)
+    expect(collectAllCoords(tree)).toEqual(['aa'])
+  })
+})
+
 // ── SgfParser ─────────────────────────────────────────────────────────────────
 
 describe('parseSgf', () => {
@@ -161,6 +200,21 @@ describe('parseSgf', () => {
   it('extrae el comentario C del nodo raíz', () => {
     const p = parseSgf('(;SZ[9]C[Negras juegan.]AB[aa])')
     expect(p.comment).toBe('Negras juegan.')
+  })
+
+  it('extrae las marcas (LB/CR/SQ/TR/MA) del nodo raíz', () => {
+    const p = parseSgf('(;SZ[9]AB[aa]LB[bb:A]CR[cc]SQ[dd]TR[ee]MA[ff])')
+    expect(p.marks.labels).toEqual([{ coord: 'bb', text: 'A' }])
+    expect(p.marks.circles).toEqual(['cc'])
+    expect(p.marks.squares).toEqual(['dd'])
+    expect(p.marks.triangles).toEqual(['ee'])
+    expect(p.marks.crosses).toEqual(['ff'])
+  })
+
+  it('extentPoints incluye posiciones usadas en cualquier variación', () => {
+    const sgf = '(;SZ[9]AB[aa]AW[bb](;B[cc]C[Correct!])(;B[dd]LB[ee:1]))'
+    const p = parseSgf(sgf)
+    expect(p.extentPoints).toEqual(expect.arrayContaining(['aa', 'bb', 'cc', 'dd', 'ee']))
   })
 })
 
@@ -266,6 +320,20 @@ describe('TsumegoController — getAnnotations', () => {
     const ann = ctrl.getAnnotations()
     expect(ann.lastMove).toBe('cd')
   })
+
+  it('incluye las marcas (LB/CR/SQ/TR/MA) del nodo actual', () => {
+    const sgf = '(;GM[1]SZ[9]PL[B]AB[bb][cb][bc]AW[cc]LB[aa:A]CR[dd](;B[cd]C[Correct!])(;B[dc]C[Wrong!]))'
+    const ctrl = makeCtrl(sgf)
+    const ann = ctrl.getAnnotations()
+    expect(ann.marks.labels).toEqual([{ coord: 'aa', text: 'A' }])
+    expect(ann.marks.circles).toEqual(['dd'])
+  })
+
+  it('extentPoints incluye las marcas y jugadas de todas las variaciones', () => {
+    const sgf = '(;GM[1]SZ[9]PL[B]AB[bb][cb][bc]AW[cc]LB[aa:A](;B[cd]C[Correct!])(;B[dc]C[Wrong!]))'
+    const ctrl = makeCtrl(sgf)
+    expect(ctrl.extentPoints).toEqual(expect.arrayContaining(['bb', 'cb', 'bc', 'cc', 'aa', 'cd', 'dc']))
+  })
 })
 
 describe('TsumegoController — navegación review', () => {
@@ -363,5 +431,45 @@ describe('TsumegoController — respuesta del oponente', () => {
     expect(resp).toBeTruthy()
     expect(resp.coord).toBe('da')
     expect(ctrl.currentStep).toBe(2)
+  })
+})
+
+// ── GoBoard — marcas SGF ────────────────────────────────────────────────────
+
+describe('renderGoBoard — marcas SGF', () => {
+  it('renderiza una etiqueta LB como texto', () => {
+    const svg = renderGoBoard({
+      boardSize: 9, blackStones: ['ee'], whiteStones: [],
+      marks: { labels: [{ coord: 'ee', text: 'A' }] },
+      extentPoints: ['ee'],
+    })
+    expect(svg).toMatch(/<text[^>]*>A<\/text>/)
+  })
+
+  it('renderiza círculos, cuadrados, triángulos y cruces', () => {
+    const svg = renderGoBoard({
+      boardSize: 9, blackStones: [], whiteStones: [],
+      marks: { circles: ['ee'], squares: ['ff'], triangles: ['gg'], crosses: ['hh'] },
+      extentPoints: ['ee', 'ff', 'gg', 'hh'],
+    })
+    expect(svg).toMatch(/<circle[^>]*fill="none"[^>]*stroke=/)
+    expect(svg).toMatch(/<rect[^>]*fill="none"[^>]*stroke=/)
+    expect(svg).toContain('<polygon')
+    expect((svg.match(/<line/g) || []).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('extentPoints amplía el recorte para mostrar marcas fuera de la posición inicial', () => {
+    const withoutExtent = renderGoBoard({
+      boardSize: 9, blackStones: ['ee'], whiteStones: [],
+      marks: { labels: [{ coord: 'aa', text: 'A' }] },
+    })
+    expect(withoutExtent).not.toMatch(/<text[^>]*>A<\/text>/)
+
+    const withExtent = renderGoBoard({
+      boardSize: 9, blackStones: ['ee'], whiteStones: [],
+      marks: { labels: [{ coord: 'aa', text: 'A' }] },
+      extentPoints: ['aa'],
+    })
+    expect(withExtent).toMatch(/<text[^>]*>A<\/text>/)
   })
 })

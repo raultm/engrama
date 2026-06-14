@@ -47,6 +47,61 @@ export function nodeMove(node) {
   return null
 }
 
+// Propiedades SGF de marcas/anotaciones soportadas y su nombre en el resultado
+const SHAPE_MARK_PROPS = { CR: 'circles', SQ: 'squares', TR: 'triangles', MA: 'crosses' }
+
+/**
+ * Extrae las marcas/anotaciones (LB, CR, SQ, TR, MA) de un nodo.
+ *
+ * @param {object|null} node
+ * @returns {{ labels: {coord:string, text:string}[], circles: string[], squares: string[], triangles: string[], crosses: string[] }}
+ */
+export function extractMarks(node) {
+  const marks = { labels: [], circles: [], squares: [], triangles: [], crosses: [] }
+  if (!node) return marks
+
+  for (const [prop, key] of Object.entries(SHAPE_MARK_PROPS)) {
+    for (const coord of node.props.get(prop) ?? []) marks[key].push(coord)
+  }
+  for (const lb of node.props.get('LB') ?? []) {
+    const [coord, ...rest] = lb.split(':')
+    if (coord) marks.labels.push({ coord, text: rest.join(':') })
+  }
+  return marks
+}
+
+// Propiedades que contienen coordenadas de piedras (jugadas y posición inicial)
+const COORD_PROPS = ['AB', 'AW', 'B', 'W']
+
+/**
+ * Recorre todo el árbol (todas las variaciones) y devuelve el conjunto de
+ * coordenadas usadas en algún momento: piedras iniciales, jugadas y marcas
+ * (LB/CR/SQ/TR/MA). Útil para calcular el recorte del tablero teniendo en
+ * cuenta también posiciones que solo aparecen en variaciones o anotaciones.
+ *
+ * @param {object} node - Nodo raíz del árbol (resultado de parseSgfTree)
+ * @returns {string[]}
+ */
+export function collectAllCoords(node) {
+  const coords = new Set()
+
+  function visit(n) {
+    for (const prop of COORD_PROPS) {
+      for (const c of n.props.get(prop) ?? []) coords.add(c)
+    }
+    const marks = extractMarks(n)
+    for (const c of marks.circles)   coords.add(c)
+    for (const c of marks.squares)   coords.add(c)
+    for (const c of marks.triangles) coords.add(c)
+    for (const c of marks.crosses)   coords.add(c)
+    for (const l of marks.labels)    coords.add(l.coord)
+    for (const child of n.children ?? []) visit(child)
+  }
+
+  visit(node)
+  return [...coords]
+}
+
 // ── Parser interno ────────────────────────────────────────────────────────
 
 function _tokenize(text) {

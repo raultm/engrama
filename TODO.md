@@ -2,10 +2,6 @@
 
 ## Pendiente
 
-### TEmas de SGF (anotas/marcas)
-
-En algunos tsumegos que me he descargado en los comentarios vienen comentarios sobre grupos de piedras u opciones para poner piedras, esas cosas no se visualizan, crees que podrías mejorar el editor sgf para añadirlo?
-
 ## Teminado 
 
 ### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
@@ -30,6 +26,24 @@ Cuando se marca una tarjeta como olvidada se pone dos posiciones mas adelante, y
 
 A veces una respuesta correcta es una secuencia de movimientos, no mostrar correcto/incorreto ni pistas(puntos verdes/grises) hasta que se haya completado los movimientos de la serie totalmente 
 
+### TEmas de SGF (anotas/marcas)
+
+En algunos tsumegos que me he descargado en los comentarios vienen comentarios sobre grupos de piedras u opciones para poner piedras, esas cosas no se visualizan, crees que podrías mejorar el editor sgf para añadirlo?
+
+Se soportan las marcas estándar de SGF: `LB` (etiquetas de texto), `CR` (círculos),
+`SQ` (cuadrados), `TR` (triángulos) y `MA` (cruces). Se muestran sobre el tablero
+(con buen contraste tanto en piedras como en intersecciones vacías) y, como las
+demás pistas, se ocultan durante la resolución y aparecen al entrar en modo revisión.
+
+### Tsumegos zoom al problema
+
+En los tsumegos habiamos hablado de mostrar la zona donde esta el problema, que se expanda hasta dos bordes del tablero, eso esta bien. Pero no cubre algunos casos. En alguna situacion hay piedras o marcas fuera de ese rango. Me gustaría que vieses todas las posiciones que se usan y se haga el zoom con respecto a esas marcas y no solo las iniciales
+
+El recorte del tablero ahora se calcula también a partir de `extentPoints`:
+todas las coordenadas usadas en cualquier punto del árbol SGF (piedras
+iniciales, jugadas de cualquier variación y marcas LB/CR/SQ/TR/MA). Así el
+recorte es estable y siempre incluye marcas o jugadas fuera de la posición
+inicial.
 
 ### Tsumegos - añadir titulo
 

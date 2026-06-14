@@ -1,5 +1,5 @@
 import { GoEngine }                     from './GoEngine.js'
-import { parseSgfTree, findVariation, nodeMove } from './SgfTree.js'
+import { parseSgfTree, findVariation, nodeMove, extractMarks, collectAllCoords } from './SgfTree.js'
 
 // Palabras clave para clasificar variaciones del árbol SGF
 const CORRECT_RE = /correct|right|good|○|◯|正解|✓|seikai/i
@@ -28,6 +28,12 @@ export class TsumegoController {
     this._tree           = sgf ? parseSgfTree(sgf) : null
     this._treeHasMarkers = this._computeTreeHasMarkers()
     this._mainLine       = this._computeMainLine()
+
+    // Todas las posiciones usadas en cualquier punto del árbol (piedras,
+    // jugadas y marcas de cualquier variación) — recorte estable del tablero
+    this._extentPoints = this._tree
+      ? collectAllCoords(this._tree)
+      : [...blackStones, ...whiteStones]
 
     // Historial: snapshot[i] = tablero tras i movimientos
     const initBoard = {}
@@ -65,6 +71,7 @@ export class TsumegoController {
     const node    = this._nodes[this.current]
     const lastMove = this.current > 0 ? this._moves[this.current - 1].coord : null
     const comment  = node ? ((node.props.get('C') ?? [])[0] ?? '') : ''
+    const marks    = extractMarks(node)
 
     const correct = [], wrong = [], neutral = []
 
@@ -79,8 +86,11 @@ export class TsumegoController {
       })
     }
 
-    return { lastMove, correctMoves: correct, wrongMoves: wrong, neutralMoves: neutral, comment }
+    return { lastMove, correctMoves: correct, wrongMoves: wrong, neutralMoves: neutral, comment, marks }
   }
+
+  /** Todas las posiciones usadas en cualquier punto del árbol (para el recorte del tablero). */
+  get extentPoints() { return this._extentPoints }
 
   // ── Jugadas (modo solve y review) ─────────────────────────────────────────
 

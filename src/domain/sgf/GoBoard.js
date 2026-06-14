@@ -26,11 +26,17 @@ export function renderGoBoard({
   correctMoves = [],
   wrongMoves   = [],
   neutralMoves = [],
+  marks        = {},
+  extentPoints = [],
 }) {
   const N = boardSize
 
   // ── Recorte automático ────────────────────────────────────────────────────
-  const allStones = [...blackStones, ...whiteStones]
+  // Se basa en las piedras actuales y en `extentPoints` (todas las posiciones
+  // usadas en cualquier punto del árbol SGF: jugadas de otras variaciones y
+  // marcas LB/CR/SQ/TR/MA), para que el recorte sea estable y cubra también
+  // marcas fuera de la posición inicial.
+  const allStones = [...new Set([...blackStones, ...whiteStones, ...extentPoints])]
   let c0 = 0, c1 = N-1, r0 = 0, r1 = N-1
   if (allStones.length) {
     const MARGIN = 1
@@ -136,6 +142,40 @@ export function renderGoBoard({
                     .map(s => { const {col,row}=decode(s); return `<circle cx="${pxC(col)}" cy="${pxR(row)}" r="${R*0.42}" fill="#94a3b8" opacity="0.7"/>` }),
   ].join('')
 
+  // Marcas SGF (LB/CR/SQ/TR/MA) del nodo actual — visibles sobre piedras o en vacío
+  const markColor = (coord) =>
+    blackStones.includes(coord) ? WHITE_FILL : (whiteStones.includes(coord) ? BLACK_FILL : LINE_COLOR)
+
+  const marksSvg = [
+    ...(marks.circles ?? [])
+      .filter(s => inCrop(decode(s).col, decode(s).row))
+      .map(s => { const {col,row}=decode(s); return `<circle cx="${pxC(col)}" cy="${pxR(row)}" r="${(R*0.58).toFixed(1)}" fill="none" stroke="${markColor(s)}" stroke-width="1.5"/>` }),
+    ...(marks.squares ?? [])
+      .filter(s => inCrop(decode(s).col, decode(s).row))
+      .map(s => { const {col,row}=decode(s); const side=R*0.85; return `<rect x="${(pxC(col)-side/2).toFixed(1)}" y="${(pxR(row)-side/2).toFixed(1)}" width="${side.toFixed(1)}" height="${side.toFixed(1)}" fill="none" stroke="${markColor(s)}" stroke-width="1.5"/>` }),
+    ...(marks.triangles ?? [])
+      .filter(s => inCrop(decode(s).col, decode(s).row))
+      .map(s => {
+        const {col,row}=decode(s); const cx=pxC(col), cy=pxR(row), h=R*0.95
+        const pts = [[cx,cy-h*0.62],[cx-h*0.58,cy+h*0.38],[cx+h*0.58,cy+h*0.38]]
+          .map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')
+        return `<polygon points="${pts}" fill="none" stroke="${markColor(s)}" stroke-width="1.5"/>`
+      }),
+    ...(marks.crosses ?? [])
+      .filter(s => inCrop(decode(s).col, decode(s).row))
+      .map(s => {
+        const {col,row}=decode(s); const cx=pxC(col), cy=pxR(row), d=R*0.5
+        return `<line x1="${(cx-d).toFixed(1)}" y1="${(cy-d).toFixed(1)}" x2="${(cx+d).toFixed(1)}" y2="${(cy+d).toFixed(1)}" stroke="${markColor(s)}" stroke-width="1.5"/>`
+             + `<line x1="${(cx-d).toFixed(1)}" y1="${(cy+d).toFixed(1)}" x2="${(cx+d).toFixed(1)}" y2="${(cy-d).toFixed(1)}" stroke="${markColor(s)}" stroke-width="1.5"/>`
+      }),
+    ...(marks.labels ?? [])
+      .filter(({coord}) => inCrop(decode(coord).col, decode(coord).row))
+      .map(({coord, text}) => {
+        const {col,row}=decode(coord)
+        return `<text x="${pxC(col)}" y="${pxR(row)}" text-anchor="middle" dominant-baseline="central" font-size="${(CELL*0.5).toFixed(1)}" font-weight="600" fill="${markColor(coord)}">${_escapeXml(text)}</text>`
+      }),
+  ].join('')
+
   // Degradados en lados cortados: de transparente (borde del grid) a oscuro (borde SVG)
   const cutDefs = [], cutFades = []
   const F = CELL * 0.4
@@ -161,10 +201,17 @@ export function renderGoBoard({
     ${stonesSvg.join('')}
     ${annotationSvg}
     ${lastMoveSvg}
+    ${marksSvg}
     ${targetsSvg}
   </svg>`
 }
 
 function _stone(cx, cy, r, fill, stroke, sw) {
   return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`
+}
+
+function _escapeXml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;',
+  }[ch]))
 }
