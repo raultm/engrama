@@ -811,6 +811,7 @@ kbd {
 /* ===== SESSION HISTORY ===== */
 .session-history { display: flex; flex-direction: column; gap: 12px; }
 .session-history h2 { font-size: 16px; font-weight: 600; }
+.session-history__total { font-size: 13px; color: var(--color-text-muted); }
 .sessions-empty { color: var(--color-text-muted); font-size: 14px; }
 
 .elo-chart { width: 100%; height: auto; display: block; }
@@ -843,6 +844,22 @@ kbd {
   min-width: 44px;
   text-align: right;
 }
+
+.session-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.session-groups h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.session-row--group { grid-template-columns: 120px 1fr auto auto; }
 
 .s-pill {
   font-size: 11px;

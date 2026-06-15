@@ -100,7 +100,9 @@ export function StatsView(rootEl) {
         <div class="session-history">
           <h2>Historial de sesiones</h2>
           ${_renderEloChart(sessions)}
+          ${_renderSessionSummary(sessions)}
           ${_renderSessionList(sessions)}
+          ${_renderWeeklySummary(sessions)}
         </div>
 
         <div class="danger-zone">
@@ -283,13 +285,101 @@ function _renderEloChart(sessions) {
 
 // ── Lista de sesiones ─────────────────────────────────────────────────────────
 
+function _renderSessionSummary(sessions) {
+  if (sessions.length === 0) return ''
+  const { totalSecs } = _aggregateSessions(sessions)
+  return `<p class="session-history__total">${sessions.length} ${sessions.length === 1 ? 'sesión' : 'sesiones'} · ${_formatDuration(totalSecs)} en total</p>`
+}
+
 function _renderSessionList(sessions) {
   if (sessions.length === 0) return ''
   return `
     <div class="session-list">
-      ${[...sessions].reverse().slice(0, 15).map(_sessionRow).join('')}
+      ${[...sessions].reverse().slice(0, 10).map(_sessionRow).join('')}
     </div>
   `
+}
+
+// ── Resumen semanal (sesiones más allá de las 10 recientes) ───────────────────
+
+function _renderWeeklySummary(sessions) {
+  const older = [...sessions].reverse().slice(10)
+  if (older.length === 0) return ''
+
+  const thisWeekStart = _startOfWeek(new Date())
+  const lastWeekStart = new Date(thisWeekStart)
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
+  const thisWeek = older.filter(row => new Date(row.started_at) >= thisWeekStart)
+  const lastWeek = older.filter(row => {
+    const started = new Date(row.started_at)
+    return started >= lastWeekStart && started < thisWeekStart
+  })
+  const earlier = older.filter(row => new Date(row.started_at) < lastWeekStart)
+
+  const rows = [
+    _groupRow('Esta semana', thisWeek),
+    _groupRow('Semana pasada', lastWeek),
+    _groupRow('Anteriores', earlier),
+  ].join('')
+
+  if (!rows.trim()) return ''
+
+  return `
+    <div class="session-groups">
+      <h3>Resumen por semanas</h3>
+      <div class="session-list">${rows}</div>
+    </div>
+  `
+}
+
+function _startOfWeek(date) {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + (d.getDay() === 0 ? -6 : 1 - d.getDay()))
+  return d
+}
+
+function _groupRow(label, rows) {
+  if (rows.length === 0) return ''
+  const a = _aggregateSessions(rows)
+
+  return `
+    <div class="session-row session-row--group">
+      <div class="session-row__date">${label}</div>
+      <div class="session-row__meta">
+        <span>${a.count} ${a.count === 1 ? 'sesión' : 'sesiones'}</span>
+        <span>${a.totalCards} tarjetas</span>
+        <span>${_formatDuration(a.totalSecs)}</span>
+      </div>
+      <div class="session-row__ratings">
+        ${_pill(a.perfect,  'perfect',   'P')}
+        ${_pill(a.good,     'good',      'B')}
+        ${_pill(a.hard,     'hard',      'D')}
+        ${_pill(a.forgotten,'forgotten', 'O')}
+      </div>
+      <div class="session-row__delta ${a.eloDelta >= 0 ? 'elo-up' : 'elo-down'}">
+        ${a.eloDelta >= 0 ? '+' : ''}${a.eloDelta}
+      </div>
+    </div>
+  `
+}
+
+function _aggregateSessions(rows) {
+  const a = { count: rows.length, totalCards: 0, totalSecs: 0, perfect: 0, good: 0, hard: 0, forgotten: 0, eloDelta: 0 }
+  for (const row of rows) {
+    const s = JSON.parse(row.summary || '{}')
+    a.totalCards += s.totalCards ?? 0
+    a.perfect += s.perfect ?? 0
+    a.good += s.good ?? 0
+    a.hard += s.hard ?? 0
+    a.forgotten += s.forgotten ?? 0
+    a.eloDelta += (s.eloEnd ?? s.eloStart ?? 1500) - (s.eloStart ?? 1500)
+    if (row.completed_at) {
+      a.totalSecs += Math.round((new Date(row.completed_at) - new Date(row.started_at)) / 1000)
+    }
+  }
+  return a
 }
 
 function _sessionRow(row) {
@@ -329,7 +419,9 @@ function _pill(count, type, label) {
 
 function _formatDuration(secs) {
   if (secs < 60) return `${secs}s`
-  const m = Math.floor(secs / 60)
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`
   const s = secs % 60
   return s > 0 ? `${m}m ${s}s` : `${m}m`
 }
