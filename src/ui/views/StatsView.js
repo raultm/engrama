@@ -79,15 +79,23 @@ export function StatsView(rootEl) {
           `}
         </div>
 
-        ${appConfig.showEloMargin ? `
         <section class="settings-section">
           <h2>Ajustes</h2>
+          ${appConfig.showEloMargin ? `
           <div class="setting-row">
             <label for="elo-margin-input">Margen de acceso ELO</label>
             <input type="number" id="elo-margin-input" class="setting-input" min="0" max="1000" step="50" value="${stats.eloMargin}">
           </div>
           <p class="setting-hint">Puedes acceder a tarjetas con dificultad hasta tu ELO + este margen. Un margen mayor te muestra tarjetas más difíciles antes.</p>
-        </section>` : ''}
+          ` : ''}
+          <div class="deadline-section">
+            <label class="deadline-label" for="deadline-input">Fecha límite del temario</label>
+            <input type="date" id="deadline-input" class="deadline-input"
+              value="${deadline ? deadline.toISOString().slice(0,10) : ''}"
+              min="${new Date().toISOString().slice(0,10)}">
+            ${deadline ? `<button class="deadline-clear" id="btn-clear-deadline">Quitar</button>` : ''}
+          </div>
+        </section>
 
         <div class="session-history">
           <h2>Historial de sesiones</h2>
@@ -101,13 +109,6 @@ export function StatsView(rootEl) {
             Importar archivo de datos (.apkg / .json / .md)
             <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
           </label>
-          <div class="deadline-section">
-            <label class="deadline-label" for="deadline-input">Fecha límite del temario</label>
-            <input type="date" id="deadline-input" class="deadline-input"
-              value="${deadline ? deadline.toISOString().slice(0,10) : ''}"
-              min="${new Date().toISOString().slice(0,10)}">
-            ${deadline ? `<button class="deadline-clear" id="btn-clear-deadline">Quitar</button>` : ''}
-          </div>
 
           <button class="btn--danger-full" id="btn-delete-engrama">Eliminar este Engrama</button>
           <button class="btn--danger-full" id="btn-reset" style="opacity:0.6;font-size:12px">Borrar toda la base de datos</button>

@@ -2,10 +2,6 @@
 
 ## Pendiente
 
-### Poner fecha límite de Temario en al zona de ajustes
-
-
-
 ## Teminado 
 
 ### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
@@ -127,6 +123,14 @@ SGF 	( ;FF[4] CA[UTF-8] AP[puzzle2sgf:0.1] GM[1] GN[636 / 861] SZ[19] AB[bb][cc]
 Crop 	aakf
 showDead 	True
 enablePlay 	False
+
+### Poner fecha límite de Temario en al zona de ajustes
+
+La fecha límite del temario (antes en la zona de borrado, junto a "Eliminar
+este Engrama") ahora vive en la sección "Ajustes" de Estadísticas, junto al
+margen de acceso ELO. La sección "Ajustes" se muestra siempre — el ajuste de
+margen ELO sigue siendo opcional según `showEloMargin` en `app-config.json`,
+pero la fecha límite es independiente de esa opción.
 
 ---
 
