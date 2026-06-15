@@ -1,0 +1,11 @@
+{
+  "appTitle": "Engrama",
+  "showDownloadDb": true,
+  "showEloMargin": true,
+  "statsCards": {
+    "elo": true,
+    "due": true,
+    "newCards": true,
+    "total": true
+  }
+}

@@ -2,6 +2,10 @@
 
 ## Pendiente
 
+### Poner fecha límite de Temario en al zona de ajustes
+
+
+
 ## Teminado 
 
 ### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
@@ -34,6 +38,23 @@ Se soportan las marcas estándar de SGF: `LB` (etiquetas de texto), `CR` (círcu
 `SQ` (cuadrados), `TR` (triángulos) y `MA` (cruces). Se muestran sobre el tablero
 (con buen contraste tanto en piedras como en intersecciones vacías) y, como las
 demás pistas, se ocultan durante la resolución y aparecen al entrar en modo revisión.
+
+### Archivo de configuracion
+
+Quiero tener la posibilidad de tener un archivo de configuracion que al cambiar modifique comportamiento de aplicacion
+
+Por ejemplo
+- Titulo de la aplicacion
+- Poder ocultar boton de descargar bd
+- Poder ocultar tarjetas de estadisticas en apartado de estadisticas
+- Poder ocultar ajuste ELO
+- En general poder ocultar ciertas cosas de la Zona de Estadísticas
+
+`public/app-config.json` se carga al arrancar y permite personalizar `appTitle`,
+`showDownloadDb`, `showEloMargin` y la visibilidad de cada tarjeta de
+`statsCards` (elo/due/newCards/total). Si el fichero está vacío o falta alguna
+clave, se usan los valores por defecto (todo visible, título "Engrama") —
+`public/app-config.json.example` documenta todas las claves disponibles.
 
 ### Tsumegos zoom al problema
 

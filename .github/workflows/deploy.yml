@@ -27,6 +27,7 @@ jobs:
 
       - run: npm ci
       - run: npm run setup
+      - run: cp -n public/app-config.json.example public/app-config.json
       - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3

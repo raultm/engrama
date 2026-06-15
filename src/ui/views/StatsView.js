@@ -4,9 +4,11 @@ import { showConfirm } from '../components/ConfirmModal.js'
 import { getRank } from '../../domain/ranks.js'
 import { showDeadlineModal } from '../components/DeadlineModal.js'
 import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engramaRegistry.js'
+import { getAppConfig } from '../../config.js'
 
 export function StatsView(rootEl) {
   const { studySessionService, userProfileRepository, studySessionRepository } = getContainer()
+  const appConfig = getAppConfig()
   const deadline = studySessionService.getMasterDeadline()
   const profile = userProfileRepository.getOrCreate()
   const stats = studySessionService.getAllCardsStats()
@@ -28,22 +30,26 @@ export function StatsView(rootEl) {
       <main class="stats-main">
 
         <div class="stats-grid">
+          ${appConfig.statsCards.elo ? `
           <div class="stats-block">
             <span class="stats-block__value">${profile.eloRating}</span>
             <span class="stats-block__label">ELO actual</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.due ? `
           <div class="stats-block stats-block--accent">
             <span class="stats-block__value">${stats.due}</span>
             <span class="stats-block__label">Pendientes hoy</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.newCards ? `
           <div class="stats-block">
             <span class="stats-block__value">${stats.newCards}</span>
             <span class="stats-block__label">Nuevas sin ver</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.total ? `
           <div class="stats-block">
             <span class="stats-block__value">${stats.total}</span>
             <span class="stats-block__label">Total tarjetas</span>
-          </div>
+          </div>` : ''}
         </div>
 
         <div class="unlock-section">
@@ -73,6 +79,7 @@ export function StatsView(rootEl) {
           `}
         </div>
 
+        ${appConfig.showEloMargin ? `
         <section class="settings-section">
           <h2>Ajustes</h2>
           <div class="setting-row">
@@ -80,7 +87,7 @@ export function StatsView(rootEl) {
             <input type="number" id="elo-margin-input" class="setting-input" min="0" max="1000" step="50" value="${stats.eloMargin}">
           </div>
           <p class="setting-hint">Puedes acceder a tarjetas con dificultad hasta tu ELO + este margen. Un margen mayor te muestra tarjetas más difíciles antes.</p>
-        </section>
+        </section>` : ''}
 
         <div class="session-history">
           <h2>Historial de sesiones</h2>
@@ -89,7 +96,7 @@ export function StatsView(rootEl) {
         </div>
 
         <div class="danger-zone">
-          <button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>
+          ${appConfig.showDownloadDb ? `<button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>` : ''}
           <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
             Importar archivo de datos (.apkg / .json / .md)
             <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
@@ -114,7 +121,7 @@ export function StatsView(rootEl) {
 
   rootEl.querySelector('#btn-back').addEventListener('click', () => navigate('/'))
 
-  rootEl.querySelector('#elo-margin-input').addEventListener('change', (e) => {
+  rootEl.querySelector('#elo-margin-input')?.addEventListener('change', (e) => {
     const val = parseInt(e.target.value, 10)
     if (Number.isFinite(val)) {
       studySessionService.setEloMargin(val)
@@ -154,7 +161,7 @@ export function StatsView(rootEl) {
     location.reload()
   })
 
-  rootEl.querySelector('#btn-download').addEventListener('click', () => {
+  rootEl.querySelector('#btn-download')?.addEventListener('click', () => {
     const { db } = getContainer()
     db.download()
   })

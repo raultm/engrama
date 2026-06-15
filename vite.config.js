@@ -26,8 +26,8 @@ export default defineConfig(({ command }) => ({
     VitePWA({
       registerType: 'autoUpdate',
 
-      // Incluir los binarios de sql.js que están en public/
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-512.png', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm'],
+      // Incluir los binarios de sql.js y la config de la app que están en public/
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-512.png', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm', 'app-config.json'],
 
       workbox: {
         // sql-wasm-browser.wasm supera el límite por defecto de 2MB
