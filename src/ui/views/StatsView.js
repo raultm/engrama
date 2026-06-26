@@ -232,7 +232,9 @@ export function StatsView(rootEl) {
 // ── Gráfico ELO ──────────────────────────────────────────────────────────────
 
 function _renderEloChart(sessions) {
-  const valid = sessions.filter(s => JSON.parse(s.summary || '{}').eloEnd != null)
+  // El gráfico se dibuja en orden cronológico (más antigua → más reciente),
+  // al contrario que el resto de bloques de esta vista.
+  const valid = [...sessions].reverse().filter(s => JSON.parse(s.summary || '{}').eloEnd != null)
   if (valid.length < 2) {
     return `<p class="sessions-empty">Completa al menos 2 sesiones para ver la evolución del ELO.</p>`
   }
@@ -295,7 +297,7 @@ function _renderSessionList(sessions) {
   if (sessions.length === 0) return ''
   return `
     <div class="session-list">
-      ${[...sessions].reverse().slice(0, 10).map(_sessionRow).join('')}
+      ${sessions.slice(0, 10).map(_sessionRow).join('')}
     </div>
   `
 }
@@ -303,7 +305,7 @@ function _renderSessionList(sessions) {
 // ── Resumen semanal (sesiones más allá de las 10 recientes) ───────────────────
 
 function _renderWeeklySummary(sessions) {
-  const older = [...sessions].reverse().slice(10)
+  const older = sessions.slice(10)
   if (older.length === 0) return ''
 
   const thisWeekStart = _startOfWeek(new Date())
@@ -346,20 +348,22 @@ function _groupRow(label, rows) {
 
   return `
     <div class="session-row session-row--group">
-      <div class="session-row__date">${label}</div>
-      <div class="session-row__meta">
-        <span>${a.count} ${a.count === 1 ? 'sesión' : 'sesiones'}</span>
-        <span>${a.totalCards} tarjetas</span>
-        <span>${_formatDuration(a.totalSecs)}</span>
+      <div class="session-row__top">
+        <span class="session-row__date">${label}</span>
+        <span class="session-row__delta ${a.eloDelta >= 0 ? 'elo-up' : 'elo-down'}">${a.eloDelta >= 0 ? '+' : ''}${a.eloDelta}</span>
       </div>
-      <div class="session-row__ratings">
-        ${_pill(a.perfect,  'perfect',   'P')}
-        ${_pill(a.good,     'good',      'B')}
-        ${_pill(a.hard,     'hard',      'D')}
-        ${_pill(a.forgotten,'forgotten', 'O')}
-      </div>
-      <div class="session-row__delta ${a.eloDelta >= 0 ? 'elo-up' : 'elo-down'}">
-        ${a.eloDelta >= 0 ? '+' : ''}${a.eloDelta}
+      <div class="session-row__bottom">
+        <div class="session-row__meta">
+          <span>${a.count} ${a.count === 1 ? 'sesión' : 'sesiones'}</span>
+          <span>${a.totalCards} tarjetas</span>
+          <span>${_formatDuration(a.totalSecs)}</span>
+        </div>
+        <div class="session-row__ratings">
+          ${_pill(a.perfect,  'perfect',   'P')}
+          ${_pill(a.good,     'good',      'B')}
+          ${_pill(a.hard,     'hard',      'D')}
+          ${_pill(a.forgotten,'forgotten', 'O')}
+        </div>
       </div>
     </div>
   `
@@ -393,20 +397,22 @@ function _sessionRow(row) {
 
   return `
     <div class="session-row ${abandoned ? 'session-row--abandoned' : ''}">
-      <div class="session-row__date">${_relativeDate(started)}</div>
-      <div class="session-row__meta">
-        <span>${s.totalCards ?? 0} tarjetas</span>
-        <span>${_formatDuration(secs)}</span>
-        ${abandoned ? '<span class="session-row__tag">abandonada</span>' : ''}
+      <div class="session-row__top">
+        <span class="session-row__date">${_formatDateTime(started)}</span>
+        <span class="session-row__delta ${delta >= 0 ? 'elo-up' : 'elo-down'}">${delta >= 0 ? '+' : ''}${delta}</span>
       </div>
-      <div class="session-row__ratings">
-        ${_pill(s.perfect,  'perfect',   'P')}
-        ${_pill(s.good,     'good',      'B')}
-        ${_pill(s.hard,     'hard',      'D')}
-        ${_pill(s.forgotten,'forgotten', 'O')}
-      </div>
-      <div class="session-row__delta ${delta >= 0 ? 'elo-up' : 'elo-down'}">
-        ${delta >= 0 ? '+' : ''}${delta}
+      <div class="session-row__bottom">
+        <div class="session-row__meta">
+          <span>${s.totalCards ?? 0} tarjetas</span>
+          <span>${_formatDuration(secs)}</span>
+          ${abandoned ? '<span class="session-row__tag">abandonada</span>' : ''}
+        </div>
+        <div class="session-row__ratings">
+          ${_pill(s.perfect,  'perfect',   'P')}
+          ${_pill(s.good,     'good',      'B')}
+          ${_pill(s.hard,     'hard',      'D')}
+          ${_pill(s.forgotten,'forgotten', 'O')}
+        </div>
       </div>
     </div>
   `
@@ -432,4 +438,9 @@ function _relativeDate(date) {
   if (days === 1) return 'Ayer'
   if (days < 7)  return `Hace ${days} días`
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+function _formatDateTime(date) {
+  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  return `${_relativeDate(date)}, ${time}`
 }

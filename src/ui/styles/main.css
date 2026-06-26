@@ -821,10 +821,9 @@ kbd {
 .session-list { display: flex; flex-direction: column; gap: 2px; }
 
 .session-row {
-  display: grid;
-  grid-template-columns: 80px 1fr auto auto;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -833,16 +832,31 @@ kbd {
 .session-row:hover { background: var(--color-surface2); }
 .session-row--abandoned { opacity: 0.6; }
 
+.session-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.session-row__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .session-row__date { color: var(--color-text-muted); white-space: nowrap; }
-.session-row__meta { display: flex; gap: 10px; color: var(--color-text-muted); }
+.session-row--group .session-row__date { font-weight: 600; color: var(--color-text); }
+.session-row__meta { display: flex; gap: 10px; color: var(--color-text-muted); flex-wrap: wrap; }
 .session-row__tag { font-size: 11px; color: var(--color-text-muted); font-style: italic; }
-.session-row__ratings { display: flex; gap: 4px; justify-content: flex-end; }
+.session-row__ratings { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .session-row__delta {
   font-weight: 600;
   font-size: 13px;
-  min-width: 44px;
-  text-align: right;
+  white-space: nowrap;
 }
 
 .session-groups {
@@ -858,8 +872,6 @@ kbd {
   font-weight: 600;
   color: var(--color-text-muted);
 }
-
-.session-row--group { grid-template-columns: 120px 1fr auto auto; }
 
 .s-pill {
   font-size: 11px;
