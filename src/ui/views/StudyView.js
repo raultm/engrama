@@ -79,6 +79,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   const progressText  = rootEl.querySelector('#progress-text')
 
   let pendingRating = null   // calificación automática (tsumego)
+  let answering = false      // evita procesar dos respuestas si se hace doble click/tap antes de la transición
 
   // Bloquear scroll de la página mientras dura la sesión
   document.body.classList.add('study-active')
@@ -102,6 +103,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
 
   function resetState() {
     revealed = false
+    answering = false
     pendingRating = null
     // La estrategia decide qué muestra el footer (tsumego oculta btn-reveal)
     getStrategy(session.currentCard.cardType).setupFooter(btnReveal, ratingButtons, btnNext)
@@ -169,6 +171,9 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
     })
     if (!ok) return
 
+    answering = true
+    ratingButtons.setAttribute('hidden', '')
+    btnNext.setAttribute('hidden', '')
     const { session: next } = studySessionService.muteCurrentCard(session)
     session = next
 
@@ -185,6 +190,9 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   btnReveal.addEventListener('click', reveal)
 
   btnNext.addEventListener('click', () => {
+    if (answering) return
+    answering = true
+    btnNext.setAttribute('hidden', '')
     const rating = pendingRating ?? 2   // Buena por defecto si no hay rating
     const { session: next, userDelta } = studySessionService.processAnswer(session, rating)
     session = next
@@ -201,8 +209,11 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   })
 
   ratingButtons.addEventListener('click', (e) => {
+    if (answering) return
     const btn = e.target.closest('[data-rating]')
     if (!btn) return
+    answering = true
+    ratingButtons.setAttribute('hidden', '')
     const rating = parseInt(btn.dataset.rating, 10)
     const { session: next, userDelta } = studySessionService.processAnswer(session, rating)
     session = next

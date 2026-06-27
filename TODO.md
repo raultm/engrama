@@ -2,6 +2,27 @@
 
 ## Pendiente
 
+### Boton de Siguiente - gestionar doble click
+
+Me ha comentado algun usuario de prueba que a veces si le das a siguiente muy rapido dos veces sale como dos cuantificaciones de elo.
+
+1. Gestionar dobleclick para que actue como click o que no haga nada
+2. Si hace un click, que espere un tiempo prudencial pero imperceptible para el humano, para que no pueda dar al boton que pudiera aparecer despues. Quizas tambien hay que hacer con el boton de ver respuesta o los 4 de responder
+
+### Ofuscar la base de datos local (futurible, comercialización)
+
+Si en el futuro se plantea comercializar Engrama, valorar ofuscar (no cifrar)
+los bytes de la BD SQLite antes de escribirlos en OPFS/localStorage, para que
+extraer el `.sqlite` (vía botón "Descargar", DevTools → OPFS, o copiar
+`localStorage`) no dé directamente un fichero abrible en un visor SQLite.
+
+Para poder identificar de qué usuario proviene una copia filtrada haría falta
+además un watermark dentro del propio contenido (una clave de ofuscación por
+usuario no sirve, porque no viaja con los datos ya desofuscados) — y eso
+requiere un punto de distribución personalizado por usuario (licencia emitida
+por un backend), no algo derivable solo en el cliente. Sin backend, de momento
+esto queda solo como idea a futuro.
+
 ## Teminado 
 
 ### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
@@ -84,11 +105,6 @@ Quiero tarjetas que tengan variaas tags ¿crees que es interesante? se podría h
 
 
 
-### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
-
-Devolverlos
-
-
 ### Filtro por tags
 Listar todos los tags disponibles en las tarjetas del engrama activo
 y permitir al usuario seleccionar uno o varios para estudiar solo
@@ -131,6 +147,16 @@ este Engrama") ahora vive en la sección "Ajustes" de Estadísticas, junto al
 margen de acceso ELO. La sección "Ajustes" se muestra siempre — el ajuste de
 margen ELO sigue siendo opcional según `showEloMargin` en `app-config.json`,
 pero la fecha límite es independiente de esa opción.
+
+### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
+
+Devolverlos.
+
+Ya estaba arreglado en el commit `91a5c7a` ("corrección de botones de
+calificación"): `reveal()` en `StudyView.js` distingue el modo automático del
+tsumego (`typeof autoRating === 'number'`) del modo manual (clic real, donde
+llega el `MouseEvent`), y en este último muestra `#rating-buttons`. Verificado
+en vivo: tras revelar una tarjeta básica aparecen los 4 botones.
 
 ---
 
