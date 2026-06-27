@@ -2,13 +2,6 @@
 
 ## Pendiente
 
-### Boton de Siguiente - gestionar doble click
-
-Me ha comentado algun usuario de prueba que a veces si le das a siguiente muy rapido dos veces sale como dos cuantificaciones de elo.
-
-1. Gestionar dobleclick para que actue como click o que no haga nada
-2. Si hace un click, que espere un tiempo prudencial pero imperceptible para el humano, para que no pueda dar al boton que pudiera aparecer despues. Quizas tambien hay que hacer con el boton de ver respuesta o los 4 de responder
-
 ### Ofuscar la base de datos local (futurible, comercialización)
 
 Si en el futuro se plantea comercializar Engrama, valorar ofuscar (no cifrar)
@@ -24,6 +17,20 @@ por un backend), no algo derivable solo en el cliente. Sin backend, de momento
 esto queda solo como idea a futuro.
 
 ## Teminado 
+
+### Boton de Siguiente - gestionar doble click
+
+Me ha comentado algun usuario de prueba que a veces si le das a siguiente muy rapido dos veces sale como dos cuantificaciones de elo.
+
+1. Gestionar dobleclick para que actue como click o que no haga nada
+2. Si hace un click, que espere un tiempo prudencial pero imperceptible para el humano, para que no pueda dar al boton que pudiera aparecer despues. Quizas tambien hay que hacer con el boton de ver respuesta o los 4 de responder
+
+Se añadió una guarda (`answering`) en `StudyView.js` que se activa al primer
+click sobre "Siguiente", los 4 botones de rating o "Silenciar", y oculta esos
+botones de inmediato — así un doble click/tap durante la transición a la
+siguiente tarjeta (~350-500ms) no vuelve a disparar `processAnswer()`. La
+guarda se libera en `resetState()` al llegar la nueva tarjeta. Verificado en
+navegador: 3 clicks rápidos sobre el mismo botón solo procesan 1 tarjeta.
 
 ### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
 
