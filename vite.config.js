@@ -36,6 +36,10 @@ export default defineConfig(({ command }) => ({
         // Precachear todos los assets del build incluido el WASM de sql.js
         // → se descargan una sola vez y se sirven desde cache sin red
         globPatterns: ['**/*.{js,css,html,svg,wasm}'],
+
+        // Limpiar cachés de versiones anteriores del SW al actualizar.
+        // Safari/iOS no siempre lo hace automáticamente, lo forzamos.
+        cleanupOutdatedCaches: true,
       },
 
       manifest: {
