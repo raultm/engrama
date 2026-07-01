@@ -159,6 +159,16 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
 
   // ── Reset ─────────────────────────────────────────────────────────────────
 
+  async restore(data) {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer)
+      this._flushTimer = null
+    }
+    if (this._writePromise) await this._writePromise.catch(() => {})
+    this._dirty = true
+    await this._writeOPFS(data)
+  }
+
   async reset() {
     this._worker?.terminate()
     this._worker = null
