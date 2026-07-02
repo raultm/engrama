@@ -107,9 +107,13 @@ export function StatsView(rootEl) {
 
         <div class="danger-zone">
           ${appConfig.showDownloadDb ? `<button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>` : ''}
+          <label class="btn--download-db btn--upload-label" aria-label="Restaurar base de datos desde backup">
+            Restaurar base de datos (.db)
+            <input type="file" id="file-input-db" style="display:none">
+          </label>
           <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
-            Importar archivo de datos (.apkg / .json / .md / .db)
-            <input type="file" id="file-input" accept=".apkg,.json,.md,.db" style="display:none">
+            Importar archivo de datos (.apkg / .json / .md)
+            <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
           </label>
 
           <button class="btn--danger-full" id="btn-delete-engrama">Eliminar este Engrama</button>
@@ -169,41 +173,54 @@ export function StatsView(rootEl) {
     db.download()
   })
 
+  rootEl.querySelector('#file-input-db').addEventListener('change', async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const data   = new Uint8Array(buffer)
+      const magic  = String.fromCharCode(...data.slice(0, 15))
+      if (magic !== 'SQLite format 3') {
+        await showConfirm({
+          title: 'Archivo no válido',
+          message: 'El fichero no parece una base de datos SQLite válida (engrama.db).',
+          confirmLabel: 'Cerrar',
+          cancelLabel: '',
+        })
+        e.target.value = ''
+        return
+      }
+
+      const ok = await showConfirm({
+        title: '¿Restaurar base de datos?',
+        message: 'Se reemplazarán todos los datos actuales con los del fichero importado. Esta acción no se puede deshacer.',
+        confirmLabel: 'Restaurar',
+        cancelLabel: 'Cancelar',
+        dangerous: true,
+      })
+      if (!ok) { e.target.value = ''; return }
+
+      await getContainer().db.restore(data)
+      location.reload()
+    } catch (err) {
+      await showConfirm({
+        title: 'Error al restaurar',
+        message: err.message,
+        confirmLabel: 'Cerrar',
+        cancelLabel: '',
+      })
+    }
+
+    e.target.value = ''
+  })
+
   rootEl.querySelector('#file-input').addEventListener('change', async (e) => {
     const file = e.target.files[0]
     if (!file) return
 
     try {
       const container = getContainer()
-
-      if (file.name.endsWith('.db')) {
-        const ok = await showConfirm({
-          title: '¿Restaurar base de datos?',
-          message: 'Se reemplazarán todos los datos actuales con los del fichero importado. Esta acción no se puede deshacer.',
-          confirmLabel: 'Restaurar',
-          cancelLabel: 'Cancelar',
-          dangerous: true,
-        })
-        if (!ok) { e.target.value = ''; return }
-
-        const buffer = await file.arrayBuffer()
-        const data   = new Uint8Array(buffer)
-        const magic  = String.fromCharCode(...data.slice(0, 15))
-        if (magic !== 'SQLite format 3') {
-          await showConfirm({
-            title: 'Archivo no válido',
-            message: 'El fichero no parece una base de datos SQLite válida (engrama.db).',
-            confirmLabel: 'Cerrar',
-            cancelLabel: '',
-          })
-          e.target.value = ''
-          return
-        }
-
-        await container.db.restore(data)
-        location.reload()
-        return
-      }
 
       if (file.name.endsWith('.apkg')) {
         await container.ankiImporter.importApkg(file)
