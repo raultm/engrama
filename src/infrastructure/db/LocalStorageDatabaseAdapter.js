@@ -11,6 +11,10 @@ export class LocalStorageDatabaseAdapter extends DatabaseAdapter {
     localStorage.setItem(this._dbKey, JSON.stringify(Array.from(this._db.export())))
   }
 
+  restore(data) {
+    localStorage.setItem(this._dbKey, JSON.stringify(Array.from(data)))
+  }
+
   reset() {
     localStorage.removeItem(this._dbKey)
   }

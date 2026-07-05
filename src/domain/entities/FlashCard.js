@@ -13,6 +13,7 @@ export class FlashCard {
     tags = [],
     prerequisites = [],
     isUnlocked = true,
+    muted = false,
   }) {
     this.id = id
     this.collectionId = collectionId
@@ -31,6 +32,7 @@ export class FlashCard {
       ? JSON.parse(prerequisites)
       : prerequisites
     this.isUnlocked = isUnlocked === 1 ? true : Boolean(isUnlocked)
+    this.muted = muted === 1 ? true : Boolean(muted)
   }
 
   update(fields) {

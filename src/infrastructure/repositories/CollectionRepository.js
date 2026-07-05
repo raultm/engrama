@@ -64,6 +64,7 @@ export class CollectionRepository {
         tags: r.tags,
         prerequisites: r.prerequisites,
         isUnlocked: r.is_unlocked,
+        muted: r.muted,
       }))
       return new Collection({ ...col, children, flashCards })
     })

@@ -6,6 +6,7 @@ dist/
 .claude/
 public/sql-wasm-browser.wasm
 public/sql-wasm-browser.js
+public/app-config.json
 
 sgf/*
 

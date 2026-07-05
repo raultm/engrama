@@ -4,9 +4,11 @@ import { showConfirm } from '../components/ConfirmModal.js'
 import { getRank } from '../../domain/ranks.js'
 import { showDeadlineModal } from '../components/DeadlineModal.js'
 import { getActiveId, getRegistry, removeEngrama, setActiveId } from '../engramaRegistry.js'
+import { getAppConfig } from '../../config.js'
 
 export function StatsView(rootEl) {
   const { studySessionService, userProfileRepository, studySessionRepository } = getContainer()
+  const appConfig = getAppConfig()
   const deadline = studySessionService.getMasterDeadline()
   const profile = userProfileRepository.getOrCreate()
   const stats = studySessionService.getAllCardsStats()
@@ -15,8 +17,8 @@ export function StatsView(rootEl) {
   const unlockPct = Math.round((stats.unlockedCount / stats.total) * 100)
 
   const nextMilestone = stats.lockedMilestones[0]
-  // La tarjeta se vuelve accesible cuando ELO_usuario + 200 >= card.eloDifficulty
-  const eloNeeded = nextMilestone ? Math.max(0, nextMilestone.elo - (profile.eloRating + 200)) : 0
+  // La tarjeta se vuelve accesible cuando ELO_usuario + margen >= card.eloDifficulty
+  const eloNeeded = nextMilestone ? Math.max(0, nextMilestone.elo - (profile.eloRating + stats.eloMargin)) : 0
 
   rootEl.innerHTML = `
     <div class="view stats-view">
@@ -28,22 +30,26 @@ export function StatsView(rootEl) {
       <main class="stats-main">
 
         <div class="stats-grid">
+          ${appConfig.statsCards.elo ? `
           <div class="stats-block">
             <span class="stats-block__value">${profile.eloRating}</span>
             <span class="stats-block__label">ELO actual</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.due ? `
           <div class="stats-block stats-block--accent">
             <span class="stats-block__value">${stats.due}</span>
             <span class="stats-block__label">Pendientes hoy</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.newCards ? `
           <div class="stats-block">
             <span class="stats-block__value">${stats.newCards}</span>
             <span class="stats-block__label">Nuevas sin ver</span>
-          </div>
+          </div>` : ''}
+          ${appConfig.statsCards.total ? `
           <div class="stats-block">
             <span class="stats-block__value">${stats.total}</span>
             <span class="stats-block__label">Total tarjetas</span>
-          </div>
+          </div>` : ''}
         </div>
 
         <div class="unlock-section">
@@ -73,18 +79,15 @@ export function StatsView(rootEl) {
           `}
         </div>
 
-        <div class="session-history">
-          <h2>Historial de sesiones</h2>
-          ${_renderEloChart(sessions)}
-          ${_renderSessionList(sessions)}
-        </div>
-
-        <div class="danger-zone">
-          <button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>
-          <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
-            Importar archivo de datos (.apkg / .json / .md)
-            <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
-          </label>
+        <section class="settings-section">
+          <h2>Ajustes</h2>
+          ${appConfig.showEloMargin ? `
+          <div class="setting-row">
+            <label for="elo-margin-input">Margen de acceso ELO</label>
+            <input type="number" id="elo-margin-input" class="setting-input" min="0" max="1000" step="50" value="${stats.eloMargin}">
+          </div>
+          <p class="setting-hint">Puedes acceder a tarjetas con dificultad hasta tu ELO + este margen. Un margen mayor te muestra tarjetas más difíciles antes.</p>
+          ` : ''}
           <div class="deadline-section">
             <label class="deadline-label" for="deadline-input">Fecha límite del temario</label>
             <input type="date" id="deadline-input" class="deadline-input"
@@ -92,6 +95,26 @@ export function StatsView(rootEl) {
               min="${new Date().toISOString().slice(0,10)}">
             ${deadline ? `<button class="deadline-clear" id="btn-clear-deadline">Quitar</button>` : ''}
           </div>
+        </section>
+
+        <div class="session-history">
+          <h2>Historial de sesiones</h2>
+          ${_renderEloChart(sessions)}
+          ${_renderSessionSummary(sessions)}
+          ${_renderSessionList(sessions)}
+          ${_renderWeeklySummary(sessions)}
+        </div>
+
+        <div class="danger-zone">
+          ${appConfig.showDownloadDb ? `<button class="btn--download-db" id="btn-download">Descargar base de datos (.db)</button>` : ''}
+          <label class="btn--download-db btn--upload-label" aria-label="Restaurar base de datos desde backup">
+            Restaurar base de datos (.db)
+            <input type="file" id="file-input-db" style="display:none">
+          </label>
+          <label class="btn--download-db btn--upload-label" aria-label="Importar archivo de datos">
+            Importar archivo de datos (.apkg / .json / .md)
+            <input type="file" id="file-input" accept=".apkg,.json,.md" style="display:none">
+          </label>
 
           <button class="btn--danger-full" id="btn-delete-engrama">Eliminar este Engrama</button>
           <button class="btn--danger-full" id="btn-reset" style="opacity:0.6;font-size:12px">Borrar toda la base de datos</button>
@@ -104,6 +127,14 @@ export function StatsView(rootEl) {
   `
 
   rootEl.querySelector('#btn-back').addEventListener('click', () => navigate('/'))
+
+  rootEl.querySelector('#elo-margin-input')?.addEventListener('change', (e) => {
+    const val = parseInt(e.target.value, 10)
+    if (Number.isFinite(val)) {
+      studySessionService.setEloMargin(val)
+      StatsView(rootEl)
+    }
+  })
 
   rootEl.querySelector('#deadline-input').addEventListener('change', (e) => {
     const val = e.target.value
@@ -137,9 +168,51 @@ export function StatsView(rootEl) {
     location.reload()
   })
 
-  rootEl.querySelector('#btn-download').addEventListener('click', () => {
+  rootEl.querySelector('#btn-download')?.addEventListener('click', () => {
     const { db } = getContainer()
     db.download()
+  })
+
+  rootEl.querySelector('#file-input-db').addEventListener('change', async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const data   = new Uint8Array(buffer)
+      const magic  = String.fromCharCode(...data.slice(0, 15))
+      if (magic !== 'SQLite format 3') {
+        await showConfirm({
+          title: 'Archivo no válido',
+          message: 'El fichero no parece una base de datos SQLite válida (engrama.db).',
+          confirmLabel: 'Cerrar',
+          cancelLabel: '',
+        })
+        e.target.value = ''
+        return
+      }
+
+      const ok = await showConfirm({
+        title: '¿Restaurar base de datos?',
+        message: 'Se reemplazarán todos los datos actuales con los del fichero importado. Esta acción no se puede deshacer.',
+        confirmLabel: 'Restaurar',
+        cancelLabel: 'Cancelar',
+        dangerous: true,
+      })
+      if (!ok) { e.target.value = ''; return }
+
+      await getContainer().db.restore(data)
+      location.reload()
+    } catch (err) {
+      await showConfirm({
+        title: 'Error al restaurar',
+        message: err.message,
+        confirmLabel: 'Cerrar',
+        cancelLabel: '',
+      })
+    }
+
+    e.target.value = ''
   })
 
   rootEl.querySelector('#file-input').addEventListener('change', async (e) => {
@@ -205,7 +278,9 @@ export function StatsView(rootEl) {
 // ── Gráfico ELO ──────────────────────────────────────────────────────────────
 
 function _renderEloChart(sessions) {
-  const valid = sessions.filter(s => JSON.parse(s.summary || '{}').eloEnd != null)
+  // El gráfico se dibuja en orden cronológico (más antigua → más reciente),
+  // al contrario que el resto de bloques de esta vista.
+  const valid = [...sessions].reverse().filter(s => JSON.parse(s.summary || '{}').eloEnd != null)
   if (valid.length < 2) {
     return `<p class="sessions-empty">Completa al menos 2 sesiones para ver la evolución del ELO.</p>`
   }
@@ -258,13 +333,103 @@ function _renderEloChart(sessions) {
 
 // ── Lista de sesiones ─────────────────────────────────────────────────────────
 
+function _renderSessionSummary(sessions) {
+  if (sessions.length === 0) return ''
+  const { totalSecs } = _aggregateSessions(sessions)
+  return `<p class="session-history__total">${sessions.length} ${sessions.length === 1 ? 'sesión' : 'sesiones'} · ${_formatDuration(totalSecs)} en total</p>`
+}
+
 function _renderSessionList(sessions) {
   if (sessions.length === 0) return ''
   return `
     <div class="session-list">
-      ${[...sessions].reverse().slice(0, 15).map(_sessionRow).join('')}
+      ${sessions.slice(0, 10).map(_sessionRow).join('')}
     </div>
   `
+}
+
+// ── Resumen semanal (sesiones más allá de las 10 recientes) ───────────────────
+
+function _renderWeeklySummary(sessions) {
+  const older = sessions.slice(10)
+  if (older.length === 0) return ''
+
+  const thisWeekStart = _startOfWeek(new Date())
+  const lastWeekStart = new Date(thisWeekStart)
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
+  const thisWeek = older.filter(row => new Date(row.started_at) >= thisWeekStart)
+  const lastWeek = older.filter(row => {
+    const started = new Date(row.started_at)
+    return started >= lastWeekStart && started < thisWeekStart
+  })
+  const earlier = older.filter(row => new Date(row.started_at) < lastWeekStart)
+
+  const rows = [
+    _groupRow('Esta semana', thisWeek),
+    _groupRow('Semana pasada', lastWeek),
+    _groupRow('Anteriores', earlier),
+  ].join('')
+
+  if (!rows.trim()) return ''
+
+  return `
+    <div class="session-groups">
+      <h3>Resumen por semanas</h3>
+      <div class="session-list">${rows}</div>
+    </div>
+  `
+}
+
+function _startOfWeek(date) {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + (d.getDay() === 0 ? -6 : 1 - d.getDay()))
+  return d
+}
+
+function _groupRow(label, rows) {
+  if (rows.length === 0) return ''
+  const a = _aggregateSessions(rows)
+
+  return `
+    <div class="session-row session-row--group">
+      <div class="session-row__top">
+        <span class="session-row__date">${label}</span>
+        <span class="session-row__delta ${a.eloDelta >= 0 ? 'elo-up' : 'elo-down'}">${a.eloDelta >= 0 ? '+' : ''}${a.eloDelta}</span>
+      </div>
+      <div class="session-row__bottom">
+        <div class="session-row__meta">
+          <span>${a.count} ${a.count === 1 ? 'sesión' : 'sesiones'}</span>
+          <span>${a.totalCards} tarjetas</span>
+          <span>${_formatDuration(a.totalSecs)}</span>
+        </div>
+        <div class="session-row__ratings">
+          ${_pill(a.perfect,  'perfect',   'P')}
+          ${_pill(a.good,     'good',      'B')}
+          ${_pill(a.hard,     'hard',      'D')}
+          ${_pill(a.forgotten,'forgotten', 'O')}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function _aggregateSessions(rows) {
+  const a = { count: rows.length, totalCards: 0, totalSecs: 0, perfect: 0, good: 0, hard: 0, forgotten: 0, eloDelta: 0 }
+  for (const row of rows) {
+    const s = JSON.parse(row.summary || '{}')
+    a.totalCards += s.totalCards ?? 0
+    a.perfect += s.perfect ?? 0
+    a.good += s.good ?? 0
+    a.hard += s.hard ?? 0
+    a.forgotten += s.forgotten ?? 0
+    a.eloDelta += (s.eloEnd ?? s.eloStart ?? 1500) - (s.eloStart ?? 1500)
+    if (row.completed_at) {
+      a.totalSecs += Math.round((new Date(row.completed_at) - new Date(row.started_at)) / 1000)
+    }
+  }
+  return a
 }
 
 function _sessionRow(row) {
@@ -278,20 +443,22 @@ function _sessionRow(row) {
 
   return `
     <div class="session-row ${abandoned ? 'session-row--abandoned' : ''}">
-      <div class="session-row__date">${_relativeDate(started)}</div>
-      <div class="session-row__meta">
-        <span>${s.totalCards ?? 0} tarjetas</span>
-        <span>${_formatDuration(secs)}</span>
-        ${abandoned ? '<span class="session-row__tag">abandonada</span>' : ''}
+      <div class="session-row__top">
+        <span class="session-row__date">${_formatDateTime(started)}</span>
+        <span class="session-row__delta ${delta >= 0 ? 'elo-up' : 'elo-down'}">${delta >= 0 ? '+' : ''}${delta}</span>
       </div>
-      <div class="session-row__ratings">
-        ${_pill(s.perfect,  'perfect',   'P')}
-        ${_pill(s.good,     'good',      'B')}
-        ${_pill(s.hard,     'hard',      'D')}
-        ${_pill(s.forgotten,'forgotten', 'O')}
-      </div>
-      <div class="session-row__delta ${delta >= 0 ? 'elo-up' : 'elo-down'}">
-        ${delta >= 0 ? '+' : ''}${delta}
+      <div class="session-row__bottom">
+        <div class="session-row__meta">
+          <span>${s.totalCards ?? 0} tarjetas</span>
+          <span>${_formatDuration(secs)}</span>
+          ${abandoned ? '<span class="session-row__tag">abandonada</span>' : ''}
+        </div>
+        <div class="session-row__ratings">
+          ${_pill(s.perfect,  'perfect',   'P')}
+          ${_pill(s.good,     'good',      'B')}
+          ${_pill(s.hard,     'hard',      'D')}
+          ${_pill(s.forgotten,'forgotten', 'O')}
+        </div>
       </div>
     </div>
   `
@@ -304,7 +471,9 @@ function _pill(count, type, label) {
 
 function _formatDuration(secs) {
   if (secs < 60) return `${secs}s`
-  const m = Math.floor(secs / 60)
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`
   const s = secs % 60
   return s > 0 ? `${m}m ${s}s` : `${m}m`
 }
@@ -315,4 +484,9 @@ function _relativeDate(date) {
   if (days === 1) return 'Ayer'
   if (days < 7)  return `Hace ${days} días`
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+function _formatDateTime(date) {
+  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  return `${_relativeDate(date)}, ${time}`
 }

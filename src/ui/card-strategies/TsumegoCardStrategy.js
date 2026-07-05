@@ -1,6 +1,7 @@
 import { CardStrategy }        from './CardStrategy.js'
 import { renderGoBoard }       from '../../domain/sgf/GoBoard.js'
 import { TsumegoController }   from '../../domain/sgf/TsumegoController.js'
+import { parseSgf }            from '../../domain/sgf/SgfParser.js'
 import { escapeHtml }          from '../utils/html.js'
 
 // Umbrales de calificación automática (segundos por movimiento del jugador)
@@ -14,8 +15,9 @@ export class TsumegoCardStrategy extends CardStrategy {
 
   async renderQuestion(card) {
     this._ctrl = null
-    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment, title } = card.extraData
-    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { interactive: true }, title || card.frontText)
+    const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment, title, sgf } = card.extraData
+    const extentPoints = sgf ? parseSgf(sgf).extentPoints : []
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { interactive: true, extentPoints }, title || card.frontText)
   }
 
   // Tsumego no usa el footer estándar — el flujo es obligatorio
@@ -35,9 +37,9 @@ export class TsumegoCardStrategy extends CardStrategy {
     const title = card.extraData.title || card.frontText
     if (this._ctrl?.mode === 'review') return _reviewHtml(this._ctrl, title)
     const tmpCtrl = new TsumegoController({ ...card.extraData })
-    const { correctMoves } = tmpCtrl.getAnnotations()
+    const { correctMoves, marks } = tmpCtrl.getAnnotations()
     const { boardSize, blackStones, whiteStones, playerToMove = 'B', comment } = card.extraData
-    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves }, title)
+    return _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, { correctMoves, marks, extentPoints: tmpCtrl.extentPoints }, title)
   }
 
   postReveal(card, containerEl) {
@@ -70,11 +72,12 @@ function _boardHtml(boardSize, blackStones, whiteStones, playerToMove, comment, 
 
 function _reviewHtml(ctrl, title = '') {
   const { blackStones, whiteStones }                              = ctrl.getBoardState()
-  const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
+  const { lastMove, correctMoves, wrongMoves, neutralMoves, comment, marks } = ctrl.getAnnotations()
   const board = renderGoBoard({
     boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
     blackStones, whiteStones,
     lastMove, correctMoves, wrongMoves, neutralMoves,
+    marks, extentPoints: ctrl.extentPoints,
     interactive: true,
   })
   const icon = ctrl.currentMover() === 'W' ? '⚪' : '⚫'
@@ -154,9 +157,10 @@ function _attachSolve(containerEl, ctrl, onReveal) {
     if (!el) return
     const solving = ctrl.mode === 'solve'
     const { blackStones, whiteStones } = ctrl.getBoardState()
-    const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
-    // Mientras se resuelve no se muestran pistas (círculos) ni el comentario del nodo:
-    // una secuencia correcta puede tener varios pasos y revelarían la respuesta a mitad de camino.
+    const { lastMove, correctMoves, wrongMoves, neutralMoves, comment, marks } = ctrl.getAnnotations()
+    // Mientras se resuelve no se muestran pistas (círculos), marcas del nodo
+    // ni el comentario: una secuencia correcta puede tener varios pasos y
+    // revelarían la respuesta a mitad de camino.
     el.innerHTML = renderGoBoard({
       boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
       blackStones, whiteStones,
@@ -164,6 +168,8 @@ function _attachSolve(containerEl, ctrl, onReveal) {
       correctMoves: solving ? [] : correctMoves,
       wrongMoves:   solving ? [] : wrongMoves,
       neutralMoves: solving ? [] : neutralMoves,
+      marks:        solving ? undefined : marks,
+      extentPoints: ctrl.extentPoints,
       interactive: solving,
     })
     const cEl = commentEl()
@@ -234,11 +240,12 @@ function _attachReview(containerEl, ctrl) {
     const el = boardEl()
     if (!el) return
     const { blackStones, whiteStones }                              = ctrl.getBoardState()
-    const { lastMove, correctMoves, wrongMoves, neutralMoves, comment } = ctrl.getAnnotations()
+    const { lastMove, correctMoves, wrongMoves, neutralMoves, comment, marks } = ctrl.getAnnotations()
     el.innerHTML = renderGoBoard({
       boardSize: ctrl.boardSize, playerToMove: ctrl.currentMover(),
       blackStones, whiteStones,
       lastMove, correctMoves, wrongMoves, neutralMoves,
+      marks, extentPoints: ctrl.extentPoints,
       interactive: true,
     })
     const cEl = commentEl()

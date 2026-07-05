@@ -818,6 +818,7 @@ kbd {
 /* ===== SESSION HISTORY ===== */
 .session-history { display: flex; flex-direction: column; gap: 12px; }
 .session-history h2 { font-size: 16px; font-weight: 600; }
+.session-history__total { font-size: 13px; color: var(--color-text-muted); }
 .sessions-empty { color: var(--color-text-muted); font-size: 14px; }
 
 .elo-chart { width: 100%; height: auto; display: block; }
@@ -827,10 +828,9 @@ kbd {
 .session-list { display: flex; flex-direction: column; gap: 2px; }
 
 .session-row {
-  display: grid;
-  grid-template-columns: 80px 1fr auto auto;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -839,16 +839,45 @@ kbd {
 .session-row:hover { background: var(--color-surface2); }
 .session-row--abandoned { opacity: 0.6; }
 
+.session-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.session-row__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .session-row__date { color: var(--color-text-muted); white-space: nowrap; }
-.session-row__meta { display: flex; gap: 10px; color: var(--color-text-muted); }
+.session-row--group .session-row__date { font-weight: 600; color: var(--color-text); }
+.session-row__meta { display: flex; gap: 10px; color: var(--color-text-muted); flex-wrap: wrap; }
 .session-row__tag { font-size: 11px; color: var(--color-text-muted); font-style: italic; }
-.session-row__ratings { display: flex; gap: 4px; justify-content: flex-end; }
+.session-row__ratings { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .session-row__delta {
   font-weight: 600;
   font-size: 13px;
-  min-width: 44px;
-  text-align: right;
+  white-space: nowrap;
+}
+
+.session-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.session-groups h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .s-pill {
@@ -864,6 +893,51 @@ kbd {
 .s-pill--good     { background: rgba(139,233,253,0.15); color: var(--color-good); }
 .s-pill--hard     { background: rgba(255,184,108,0.15); color: var(--color-hard); }
 .s-pill--forgotten{ background: rgba(255,85,85,0.12);   color: var(--color-forgotten); }
+
+/* ===== SETTINGS SECTION ===== */
+.settings-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.settings-section h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.setting-row label {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.setting-input {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  text-align: right;
+}
+
+.setting-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 10px;
+  line-height: 1.5;
+}
 
 /* ===== DEADLINE ===== */
 .deadline-section {
@@ -1056,6 +1130,7 @@ body.study-active #app {
 
 /* ===== FLASHCARD ===== */
 .flashcard {
+  position: relative;
   width: 100%;
   max-width: 600px;
   margin: auto;
@@ -1067,6 +1142,37 @@ body.study-active #app {
   display: flex;
   flex-direction: column;
   animation: cardIn 200ms ease;
+  box-shadow: var(--shadow);
+}
+
+.flashcard__mute {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.flashcard__mute:hover {
+  opacity: 1;
+  color: var(--color-forgotten);
+  border-color: var(--color-forgotten);
+}
+
+/* Tsumego sin envoltorio en móvil: el icono necesita su propio fondo
+   para no quedar "flotando" sobre el tablero o el título */
+.flashcard[data-card-type="tsumego"] .flashcard__mute {
+  background: var(--color-surface);
   box-shadow: var(--shadow);
 }
 
@@ -1716,6 +1822,8 @@ body.study-active #app {
     min-height: unset;
   }
   .flashcard[data-card-type="tsumego"] .flashcard__label { display: none; }
+  /* Deja hueco simétrico para que el título no quede bajo el icono de silenciar */
+  .flashcard[data-card-type="tsumego"] .tsumego-title { padding: 0 42px; }
   .collections-grid { grid-template-columns: 1fr; }
 
   .flashcard { padding: 24px 20px; min-height: 160px; }

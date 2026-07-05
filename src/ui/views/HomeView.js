@@ -7,6 +7,7 @@ import { escapeHtml } from '../utils/html.js'
 import { SeedSelectionView } from './SeedSelectionView.js'
 import { RANKS, getRank } from '../../domain/ranks.js'
 import { checkForUpdate } from '../utils/swUpdate.js'
+import { getAppConfig } from '../../config.js'
 
 export function HomeView(rootEl) {
   const { studySessionService, userProfileRepository, syncService } = getContainer()
@@ -42,7 +43,7 @@ export function HomeView(rootEl) {
             <circle cx="13.5" cy="3" r="1.3" fill="currentColor"/>
             <circle cx="3.5" cy="17" r="1.3" fill="currentColor"/>
           </svg>
-          Engrama
+          ${escapeHtml(getAppConfig().appTitle)}
         </span>
         <div class="engrama-selector">
           <select id="engrama-select" aria-label="Cambiar Engrama" title="Cambiar Engrama">

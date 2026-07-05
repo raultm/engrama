@@ -167,6 +167,7 @@ export class DatabaseAdapter {
     try { this._db.run(`ALTER TABLE study_sessions ADD COLUMN synced INTEGER DEFAULT 0`) } catch {}
     try { this._db.run(`ALTER TABLE flashcards ADD COLUMN card_type TEXT DEFAULT 'basic'`) } catch {}
     try { this._db.run(`ALTER TABLE flashcards ADD COLUMN extra_data TEXT DEFAULT '{}'`) } catch {}
+    try { this._db.run(`ALTER TABLE flashcards ADD COLUMN muted INTEGER DEFAULT 0`) } catch {}
 
     this.persist()
   }

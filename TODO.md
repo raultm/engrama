@@ -68,6 +68,53 @@ Al fallar un tsumego pasa directo a revisión con rating automático. Un botón
 "Reintentar" (que mantenga el rating de fallo para el scheduler, o lo marque
 como repetición) permitiría volver a leer la posición — es como se entrena
 tsumego en la vida real.
+### Ofuscar la base de datos local (futurible, comercialización)
+
+Si en el futuro se plantea comercializar Engrama, valorar ofuscar (no cifrar)
+los bytes de la BD SQLite antes de escribirlos en OPFS/localStorage, para que
+extraer el `.sqlite` (vía botón "Descargar", DevTools → OPFS, o copiar
+`localStorage`) no dé directamente un fichero abrible en un visor SQLite.
+
+Para poder identificar de qué usuario proviene una copia filtrada haría falta
+además un watermark dentro del propio contenido (una clave de ofuscación por
+usuario no sirve, porque no viaja con los datos ya desofuscados) — y eso
+requiere un punto de distribución personalizado por usuario (licencia emitida
+por un backend), no algo derivable solo en el cliente. Sin backend, de momento
+esto queda solo como idea a futuro.
+
+## Teminado 
+
+### Boton de Siguiente - gestionar doble click
+
+Me ha comentado algun usuario de prueba que a veces si le das a siguiente muy rapido dos veces sale como dos cuantificaciones de elo.
+
+1. Gestionar dobleclick para que actue como click o que no haga nada
+2. Si hace un click, que espere un tiempo prudencial pero imperceptible para el humano, para que no pueda dar al boton que pudiera aparecer despues. Quizas tambien hay que hacer con el boton de ver respuesta o los 4 de responder
+
+Se añadió una guarda (`answering`) en `StudyView.js` que se activa al primer
+click sobre "Siguiente", los 4 botones de rating o "Silenciar", y oculta esos
+botones de inmediato — así un doble click/tap durante la transición a la
+siguiente tarjeta (~350-500ms) no vuelve a disparar `processAnswer()`. La
+guarda se libera en `resetState()` al llegar la nueva tarjeta. Verificado en
+navegador: 3 clicks rápidos sobre el mismo botón solo procesan 1 tarjeta.
+
+### Cuando este viendo una tarjeta poder marcarla para no volver a mostrar
+
+A veces en mazos que se importan el usuario no quiere que le vuelva a salir una tarjeta, o marcarla de alguna manera para que no salga.
+
+¿por qué? quizas la tarjeta esta simplemente mal, o porque cree que por ahora no tiene el nivel que requiere para responderla.
+
+Durante la visualizacion de la tarjeta poder marcarla de alguna manera y que no vuelva a salir. Quizas en el futuro podamos mostrarle al usuario estar tarjetas "silenciadas" y que pueda reactivarlas, pero por ahora eso no.
+
+Lo que si es importante es que al seleccionar para silenciar, aparezca un modal para confirmar la accion, en esa sesion de estudio ya nos olvidamos de ella.
+
+### Gestion de cartas con respecto al ELO
+
+Hasta ahora hemos definido que el usuario tiene un ELO y solo va a poder acceder a ciertas tarjetas del mazo que no superen su ELO mas un margen, ese margen ahora es fijo, pero quiero que ahora en la parte de ajustes ahora se pueda cambiar el valor de ese rango.
+
+### Tarjetas marcada como Olvidada o Mal
+
+Cuando se marca una tarjeta como olvidada se pone dos posiciones mas adelante, y en general el funcionamiento es correcto, pero alguna vez me ha pasado que la ultima tarjeta de la sesion es olvidada y la sesion se acaba. Este comportamiento no me gusta, no se exactamente la razon, pero al poner dos mas adelante parece que hay un mal funcionamiento.
 
 ### No mostrar pistas en tsumegos hasta finalizar secuencia
 
@@ -81,6 +128,41 @@ A veces una respuesta correcta es una secuencia de movimientos, no mostrar corre
 y en `.go-target` (targets SVG del tablero de Go).
 
 
+### TEmas de SGF (anotas/marcas)
+
+En algunos tsumegos que me he descargado en los comentarios vienen comentarios sobre grupos de piedras u opciones para poner piedras, esas cosas no se visualizan, crees que podrías mejorar el editor sgf para añadirlo?
+
+Se soportan las marcas estándar de SGF: `LB` (etiquetas de texto), `CR` (círculos),
+`SQ` (cuadrados), `TR` (triángulos) y `MA` (cruces). Se muestran sobre el tablero
+(con buen contraste tanto en piedras como en intersecciones vacías) y, como las
+demás pistas, se ocultan durante la resolución y aparecen al entrar en modo revisión.
+
+### Archivo de configuracion
+
+Quiero tener la posibilidad de tener un archivo de configuracion que al cambiar modifique comportamiento de aplicacion
+
+Por ejemplo
+- Titulo de la aplicacion
+- Poder ocultar boton de descargar bd
+- Poder ocultar tarjetas de estadisticas en apartado de estadisticas
+- Poder ocultar ajuste ELO
+- En general poder ocultar ciertas cosas de la Zona de Estadísticas
+
+`public/app-config.json` se carga al arrancar y permite personalizar `appTitle`,
+`showDownloadDb`, `showEloMargin` y la visibilidad de cada tarjeta de
+`statsCards` (elo/due/newCards/total). Si el fichero está vacío o falta alguna
+clave, se usan los valores por defecto (todo visible, título "Engrama") —
+`public/app-config.json.example` documenta todas las claves disponibles.
+
+### Tsumegos zoom al problema
+
+En los tsumegos habiamos hablado de mostrar la zona donde esta el problema, que se expanda hasta dos bordes del tablero, eso esta bien. Pero no cubre algunos casos. En alguna situacion hay piedras o marcas fuera de ese rango. Me gustaría que vieses todas las posiciones que se usan y se haga el zoom con respecto a esas marcas y no solo las iniciales
+
+El recorte del tablero ahora se calcula también a partir de `extentPoints`:
+todas las coordenadas usadas en cualquier punto del árbol SGF (piedras
+iniciales, jugadas de cualquier variación y marcas LB/CR/SQ/TR/MA). Así el
+recorte es estable y siempre incluye marcas o jugadas fuera de la posición
+inicial.
 
 ### Tsumegos - añadir titulo
 
@@ -102,11 +184,6 @@ Como voy a motivar a la gente a instalarlo como PWA y no conozco mucho el tema.
 
 Quiero tarjetas que tengan variaas tags ¿crees que es interesante? se podría hacer visualmente entendible, tal y como estan ahora las tags me encanta como se usa
 
-
-
-### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
-
-Devolverlos
 
 
 ### Filtro por tags
@@ -144,12 +221,31 @@ Crop 	aakf
 showDead 	True
 enablePlay 	False
 
+### Poner fecha límite de Temario en al zona de ajustes
+
+La fecha límite del temario (antes en la zona de borrado, junto a "Eliminar
+este Engrama") ahora vive en la sección "Ajustes" de Estadísticas, junto al
+margen de acceso ELO. La sección "Ajustes" se muestra siempre — el ajuste de
+margen ELO sigue siendo opcional según `showEloMargin` en `app-config.json`,
+pero la fecha límite es independiente de esa opción.
+
+### Ahora las tarjetas que no son tsumegos han perdido los 4 botones de rating
+
+Devolverlos.
+
+Ya estaba arreglado en el commit `91a5c7a` ("corrección de botones de
+calificación"): `reveal()` en `StudyView.js` distingue el modo automático del
+tsumego (`typeof autoRating === 'number'`) del modo manual (clic real, donde
+llega el `MouseEvent`), y en este último muestra `#rating-buttons`. Verificado
+en vivo: tras revelar una tarjeta básica aparecen los 4 botones.
+
 ---
 
 ## Notas de diseño
 
 ### Sistema de acceso (ya implementado)
-El usuario solo accede a tarjetas con `eloDifficulty ≤ userElo + 200`.
+El usuario solo accede a tarjetas con `eloDifficulty ≤ userElo + margen`.
+El margen es configurable desde Estadísticas (por defecto 200).
 No hay tarjetas "bloqueadas" manualmente — el acceso es dinámico.
 Si un mazo tiene pocas tarjetas de nivel bajo y muchas de nivel alto,
 el usuario subirá de ELO despacio. Eso es un problema del diseño del

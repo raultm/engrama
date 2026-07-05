@@ -26,8 +26,8 @@ export default defineConfig(({ command }) => ({
     VitePWA({
       registerType: 'autoUpdate',
 
-      // Incluir los binarios de sql.js que están en public/
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-512.png', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm'],
+      // Incluir los binarios de sql.js y la config de la app que están en public/
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-512.png', 'sql-wasm-browser.js', 'sql-wasm-browser.wasm', 'app-config.json'],
 
       workbox: {
         // sql-wasm-browser.wasm supera el límite por defecto de 2MB
@@ -36,6 +36,10 @@ export default defineConfig(({ command }) => ({
         // Precachear todos los assets del build incluido el WASM de sql.js
         // → se descargan una sola vez y se sirven desde cache sin red
         globPatterns: ['**/*.{js,css,html,svg,wasm}'],
+
+        // Limpiar cachés de versiones anteriores del SW al actualizar.
+        // Safari/iOS no siempre lo hace automáticamente, lo forzamos.
+        cleanupOutdatedCaches: true,
       },
 
       manifest: {

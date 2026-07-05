@@ -66,7 +66,7 @@ export class StudySession {
   recordResult(cardId, rating, updatedCard, eloChange) {
     const newQueue = this.queue.slice(1)
     const requeueCount = this.requeueCounts[cardId] ?? 0
-    const shouldRequeue = rating < 2 && requeueCount < MAX_REQUEUE && newQueue.length > 0
+    const shouldRequeue = rating < 2 && requeueCount < MAX_REQUEUE
 
     if (shouldRequeue) {
       const insertAt = Math.min(2, newQueue.length)
@@ -85,6 +85,24 @@ export class StudySession {
       requeueCounts: shouldRequeue
         ? { ...this.requeueCounts, [cardId]: requeueCount + 1 }
         : this.requeueCounts,
+    })
+  }
+
+  // Silencia la tarjeta actual: sale de la cola y deja de contar en el total
+  // de esta sesión, sin registrar un resultado.
+  muteCurrentCard() {
+    const card = this.currentCard
+    if (!card) return this
+
+    const newQueue = this.queue.slice(1)
+    const finished = newQueue.length === 0
+
+    return new StudySession({
+      ...this,
+      cards: this.cards.filter(c => c.id !== card.id),
+      queue: newQueue,
+      status: finished ? SessionStatus.COMPLETED : SessionStatus.ACTIVE,
+      completedAt: finished ? new Date().toISOString() : null,
     })
   }
 

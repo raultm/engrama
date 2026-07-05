@@ -7,6 +7,7 @@ import { SeedSelectionView } from './ui/views/SeedSelectionView.js'
 import { buildSeedRegistry } from './data/seedRegistry.js'
 import { initTheme } from './ui/theme.js'
 import { getActiveId } from './ui/engramaRegistry.js'
+import { loadAppConfig } from './config.js'
 
 initTheme()
 
@@ -14,6 +15,9 @@ async function boot() {
   const app = document.getElementById('app')
 
   try {
+    const config = await loadAppConfig()
+    document.title = config.appTitle
+
     const activeId = getActiveId()
 
     if (!activeId) {

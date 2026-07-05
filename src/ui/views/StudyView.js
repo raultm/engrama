@@ -38,6 +38,12 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
 
       <div class="study-scroll">
         <div class="flashcard" id="flashcard">
+          <button class="flashcard__mute" id="btn-mute" aria-label="Silenciar esta tarjeta" title="Silenciar esta tarjeta">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
           <div class="flashcard__front" id="card-front">
             <div class="flashcard__label">Pregunta</div>
             <div class="flashcard__content" id="front-content"></div>
@@ -73,6 +79,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   const progressText  = rootEl.querySelector('#progress-text')
 
   let pendingRating = null   // calificación automática (tsumego)
+  let answering = false      // evita procesar dos respuestas si se hace doble click/tap antes de la transición
 
   // Bloquear scroll de la página mientras dura la sesión
   document.body.classList.add('study-active')
@@ -96,6 +103,7 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
 
   function resetState() {
     revealed = false
+    answering = false
     pendingRating = null
     // La estrategia decide qué muestra el footer (tsumego oculta btn-reveal)
     getStrategy(session.currentCard.cardType).setupFooter(btnReveal, ratingButtons, btnNext)
@@ -153,9 +161,38 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
     }
   })
 
+  rootEl.querySelector('#btn-mute').addEventListener('click', async () => {
+    const ok = await showConfirm({
+      title: '¿Silenciar esta tarjeta?',
+      message: 'No volverá a aparecer en próximas sesiones de estudio. En esta sesión pasamos a la siguiente.',
+      confirmLabel: 'Silenciar',
+      cancelLabel: 'Cancelar',
+      dangerous: true,
+    })
+    if (!ok) return
+
+    answering = true
+    ratingButtons.setAttribute('hidden', '')
+    btnNext.setAttribute('hidden', '')
+    const { session: next } = studySessionService.muteCurrentCard(session)
+    session = next
+
+    if (next.isFinished) {
+      cleanup()
+      const syncPromise = getContainer().syncService.trySyncSessions()
+        .catch(() => ({ skipped: true, reason: 'error' }))
+      _renderSummary(rootEl, next, syncPromise)
+    } else {
+      transitionToNext()
+    }
+  })
+
   btnReveal.addEventListener('click', reveal)
 
   btnNext.addEventListener('click', () => {
+    if (answering) return
+    answering = true
+    btnNext.setAttribute('hidden', '')
     const rating = pendingRating ?? 2   // Buena por defecto si no hay rating
     const { session: next, userDelta } = studySessionService.processAnswer(session, rating)
     session = next
@@ -172,8 +209,11 @@ async function _renderShell(rootEl, initialSession, studySessionService) {
   })
 
   ratingButtons.addEventListener('click', (e) => {
+    if (answering) return
     const btn = e.target.closest('[data-rating]')
     if (!btn) return
+    answering = true
+    ratingButtons.setAttribute('hidden', '')
     const rating = parseInt(btn.dataset.rating, 10)
     const { session: next, userDelta } = studySessionService.processAnswer(session, rating)
     session = next

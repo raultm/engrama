@@ -16,11 +16,32 @@ import { DatabaseAdapter } from './DatabaseAdapter.js'
 export class OPFSDatabaseAdapter extends DatabaseAdapter {
   constructor(engramaId) {
     super(engramaId)
-    this._opfsDir     = engramaId          // carpeta raíz del engrama en OPFS
-    this._opfsFile    = 'db.sqlite'        // BD dentro de esa carpeta
-    this._flushTimer  = null
+    this._opfsDir      = engramaId
+    this._opfsFile     = 'db.sqlite'
+    this._flushTimer   = null
     this._writePromise = null
+    this._dirty        = false
+    this._worker       = null
+    this._pending      = new Map()
+    this._msgId        = 0
     this._setupFlushOnHide()
+  }
+
+  _getWorker() {
+    if (this._worker) return this._worker
+    try {
+      this._worker = new Worker(new URL('./opfs-worker.js', import.meta.url), { type: 'module' })
+      this._worker.addEventListener('message', ({ data }) => {
+        const resolve = this._pending.get(data.id)
+        if (resolve) {
+          this._pending.delete(data.id)
+          resolve(data)
+        }
+      })
+      return this._worker
+    } catch {
+      return null
+    }
   }
 
   // ── Carga ─────────────────────────────────────────────────────────────────
@@ -65,17 +86,27 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
   /**
    * Programa una escritura debounced — no bloquea cada run().
    * Múltiples run() rápidos → una sola escritura en OPFS.
+   *
+   * El debounce es de 1500ms (en vez de los típicos 100ms) para reducir
+   * drásticamente el número de ficheros temporales que iOS crea internamente
+   * con createWritable() y que no limpia si el proceso se suspende antes de
+   * que close() complete. La pérdida máxima de datos en un crash es ~1.5s.
    */
   persist() {
+    this._dirty = true
     if (this._flushTimer) clearTimeout(this._flushTimer)
     this._flushTimer = setTimeout(() => {
       this._flushTimer = null
       this._flush()
-    }, 100)
+    }, 1500)
   }
 
-  /** Escribe inmediatamente (usado en el evento pagehide). */
+  /** Escribe inmediatamente (usado en el evento pagehide/visibilitychange). */
   async flushNow() {
+    // Si no hay cambios pendientes, no crear una escritura innecesaria en OPFS
+    // (cada createWritable() en iOS genera un fichero temporal que puede
+    // acumularse si el proceso se suspende antes de que close() complete).
+    if (!this._dirty) return
     if (this._flushTimer) {
       clearTimeout(this._flushTimer)
       this._flushTimer = null
@@ -94,11 +125,31 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
   }
 
   async _writeOPFS(data) {
-    const dir      = await this._engramaDir(true)
-    const fh       = await dir.getFileHandle(this._opfsFile, { create: true })
-    const writable = await fh.createWritable()
-    await writable.write(data)
-    await writable.close()
+    const worker = this._getWorker()
+
+    if (worker) {
+      // Ruta principal: Worker + createSyncAccessHandle() — sin ficheros temporales.
+      const id = ++this._msgId
+      await new Promise((resolve, reject) => {
+        this._pending.set(id, (result) =>
+          result.ok ? resolve() : reject(new Error(result.error))
+        )
+        // Transferir el buffer al Worker (copia cero) y escribir allí.
+        worker.postMessage(
+          { id, engramaId: this._opfsDir, fileName: this._opfsFile, payload: data },
+          [data.buffer]
+        )
+      })
+    } else {
+      // Fallback: createWritable() si el Worker no está disponible.
+      const dir      = await this._engramaDir(true)
+      const fh       = await dir.getFileHandle(this._opfsFile, { create: true })
+      const writable = await fh.createWritable()
+      await writable.write(data)
+      await writable.close()
+    }
+
+    this._dirty = false
 
     if (this._migrateFrom) {
       localStorage.removeItem(this._migrateFrom)
@@ -108,10 +159,21 @@ export class OPFSDatabaseAdapter extends DatabaseAdapter {
 
   // ── Reset ─────────────────────────────────────────────────────────────────
 
+  async restore(data) {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer)
+      this._flushTimer = null
+    }
+    if (this._writePromise) await this._writePromise.catch(() => {})
+    this._dirty = true
+    await this._writeOPFS(data)
+  }
+
   async reset() {
+    this._worker?.terminate()
+    this._worker = null
     try {
       const root = await navigator.storage.getDirectory()
-      // Eliminar toda la carpeta del engrama (DB + imágenes)
       await root.removeEntry(this._opfsDir, { recursive: true })
     } catch {}
     localStorage.removeItem(this._dbKey)
