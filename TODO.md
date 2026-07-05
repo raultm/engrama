@@ -2,11 +2,85 @@
 
 ## Pendiente
 
+### UX - Deshacer última calificación
+
+No hay forma de corregir un toque accidental en Olvidada/Difícil/etc. Un botón
+"deshacer" (o unos segundos de margen tras calificar) evitaría penalizar el ELO
+y la programación por un fallo de dedo. Es de lo más echado en falta viniendo de Anki.
+
+### UX - Mostrar atajos de teclado en los botones de calificación
+
+Los atajos 1-4 y espacio/Enter funcionan, y el array RATINGS ya tiene `key`,
+pero el template de StudyView no pinta el `<kbd>` (el CSS `.rating-btn kbd`
+sigue existiendo — se perdió en algún refactor). En escritorio ayudaría a
+descubrirlos. Ocultarlos en móvil.
+
+### UX - Onboarding mínimo la primera vez
+
+Al entrar por primera vez no se explica qué es el ELO, qué significan los 4
+botones, ni que las tarjetas difíciles están bloqueadas hasta subir de nivel.
+Un par de pantallas o tooltips la primera sesión (descartables) bastarían.
+
+### UX - Feedback de progreso al importar mazos grandes
+
+Importar un .apkg o markdown de miles de tarjetas (goproblems: 19k) deja la
+pantalla congelada sin indicación. Mostrar spinner + "importando N/M tarjetas"
+o al menos un estado indeterminado con mensaje.
+
+### UX - El botón de estudiar no dice cuántas tarjetas tendrá la sesión
+
+La sesión está limitada a 10 (MAX_SESSION_SIZE) pero "Para hoy: 47" sugiere
+que vas a hacer 47. Indicar "Sesión de 10" en el botón o bajo él. Valorar
+también sesión de tamaño configurable (corta/normal/larga).
+
+### UX - Mostrar el ELO numérico en la Home
+
+En la Home solo se ve el rango y la barra; el número exacto de ELO (el gancho
+principal de la app) solo aparece en Estadísticas. Mostrarlo junto al rank-badge.
+
+### UX - Racha visible desde el día 1
+
+`streak > 3` hace que los primeros 3 días no aparezca nada — justo cuando más
+motivación hace falta para consolidar el hábito. Mostrarla desde el día 2, o
+desde el 1 con estilo discreto.
+
+### UX - Reorganizar la "danger zone" de Estadísticas
+
+Descargar BD, importar archivo y fecha límite no son acciones peligrosas pero
+viven junto a "Eliminar Engrama" y "Borrar toda la base de datos". Separar en
+"Datos" (exportar/importar/fecha límite) y "Zona peligrosa" (borrados), con
+más fricción visual en la segunda.
+
+### UX - Renombrar Engrama
+
+Una vez instalado no se puede cambiar el nombre. Útil tras importar mazos
+con nombres largos autogenerados.
+
+### UX - Cambio de Engrama sin recarga completa
+
+Cambiar de Engrama (y también al terminar de importar) hace `location.reload()`,
+con flash en blanco. Re-inicializar el contenedor y re-renderizar quedaría
+mucho más fluido, sensación de app nativa.
+
+### UX - Tsumego: ofrecer "reintentar" antes de calificar
+
+Al fallar un tsumego pasa directo a revisión con rating automático. Un botón
+"Reintentar" (que mantenga el rating de fallo para el scheduler, o lo marque
+como repetición) permitiría volver a leer la posición — es como se entrena
+tsumego en la vida real.
+
 ### No mostrar pistas en tsumegos hasta finalizar secuencia
 
 A veces una respuesta correcta es una secuencia de movimientos, no mostrar correcto/incorreto ni pistas(puntos verdes/grises) hasta que se haya completado los movimientos de la serie totalmente 
 
-## Teminado 
+## Terminado
+
+### Doble click en botones — zoom no deseado en móvil
+
+`touch-action: manipulation` en `button, a, input, select, [role="button"]`
+y en `.go-target` (targets SVG del tablero de Go).
+
+
 
 ### Tsumegos - añadir titulo
 

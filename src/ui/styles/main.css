@@ -2,6 +2,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
 
+/* Evita el zoom por doble toque en elementos interactivos (comportamiento de app nativa).
+   touch-action: manipulation desactiva el double-tap-zoom sin quitar el pinch-to-zoom
+   ni el scroll del resto de la página. */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
 /* Dracula theme — https://draculatheme.com/contribute */
 :root {
   --color-bg: #21222c;
@@ -1368,6 +1375,7 @@ body.study-active #app {
 /* Target clicable en cada intersección vacía del tablero */
 .go-target {
   cursor: pointer;
+  touch-action: manipulation;
 }
 .go-target:hover {
   fill: rgba(255, 255, 255, 0.25);
