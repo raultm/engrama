@@ -25,6 +25,29 @@ En el campo **Tags** de cada nota:
 
 Sin etiquetas → ELO 1500, desbloqueada.
 
+## Actualizar un mazo sin perder el progreso
+
+Puedes editar un mazo en Anki y volver a exportarlo como `.apkg`. Engrama usa
+el identificador interno de cada tarjeta de Anki para sincronizarlo:
+
+- Se actualizan pregunta, respuesta, etiquetas, imágenes y oclusiones.
+- Se conservan el ELO alcanzado por la tarjeta, su planificación de repasos,
+  el estado de desbloqueo, si está silenciada y el perfil del estudiante.
+- Las tarjetas nuevas se añaden; las eliminadas se retiran del mazo importado.
+- Mover una tarjeta entre submazos conserva su progreso.
+
+Para que funcione, hay que **editar las notas existentes** en Anki: no las
+borres y recrees para una corrección, porque Anki les asignaría un ID nuevo y
+Engrama las trataría como tarjetas distintas. Al construir mazos con un
+generador propio, sus IDs de nota, tarjeta y mazo deben ser deterministas y no
+cambiar entre ejecuciones.
+
+Los mazos importados con versiones anteriores de Engrama usaban IDs aleatorios.
+En la primera actualización se migra automáticamente cualquier tarjeta cuyo
+contenido no haya cambiado. Si una de esas tarjetas ya fue corregida, no existe
+un vínculo fiable con su antiguo ID de Anki y se añadirá como nueva; en los
+mazos nuevos de 6.º esto no será un problema.
+
 ---
 
 ## Tarjetas de tsumego desde Anki

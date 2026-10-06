@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
+  AnkiImporter,
   _parseNewIOField,
   _parseMediaProto,
   _eloFromTags,
+  _eloFromNoteData,
   _isUnlockedFromTags,
+  _toEngramaCardId,
 } from '../../application/services/AnkiImporter.js'
+import { FlashCard } from '../../domain/entities/FlashCard.js'
 
 // ── _eloFromTags ──────────────────────────────────────────────────────────
 
@@ -35,6 +39,14 @@ describe('_eloFromTags', () => {
   })
 })
 
+describe('_eloFromNoteData', () => {
+  it('lee el ELO del paquete sin necesitar una etiqueta', () => {
+    expect(_eloFromNoteData('{"engrama":{"elo":1350}}')).toBe(1350)
+    expect(_eloFromNoteData('')).toBeNull()
+    expect(_eloFromNoteData('{"engrama":{"elo":"1350"}}')).toBeNull()
+  })
+})
+
 // ── _isUnlockedFromTags ───────────────────────────────────────────────────
 
 describe('_isUnlockedFromTags', () => {
@@ -62,6 +74,97 @@ describe('_isUnlockedFromTags', () => {
 
   it('NO bloquea con "locked:false"', () => {
     expect(_isUnlockedFromTags(['locked:false'])).toBe(true)
+  })
+})
+
+// ── Sincronización de .apkg ──────────────────────────────────────────────
+
+describe('sincronización de .apkg', () => {
+  it('usa IDs estables de Anki y conserva el progreso al actualizar contenido', () => {
+    expect(_toEngramaCardId('12345')).toBe('anki-card-12345')
+
+    const collections = new Map([
+      ['anki-deck-10', { id: 'anki-deck-10', parentId: null, name: 'Nombre antiguo', createdAt: '2026-01-01' }],
+      ['anki-deck-11', { id: 'anki-deck-11', parentId: 'anki-deck-10', name: 'Submazo eliminado', createdAt: '2026-01-01' }],
+    ])
+    const cards = new Map([
+      ['anki-card-42', new FlashCard({
+        id: 'anki-card-42', collectionId: 'anki-deck-10',
+        frontText: 'Versión antigua', backText: 'Respuesta antigua',
+        tags: ['antigua'], eloDifficulty: 1680, isUnlocked: false, muted: true,
+        schedulerData: { repetitions: 4, nextReview: '2026-10-01T09:00:00.000Z' },
+        createdAt: '2026-01-02T00:00:00.000Z',
+      })],
+      ['anki-card-99', new FlashCard({
+        id: 'anki-card-99', collectionId: 'anki-deck-10', frontText: 'Eliminada', backText: '',
+      })],
+      ['anki-card-100', new FlashCard({
+        id: 'anki-card-100', collectionId: 'anki-deck-11', frontText: 'Submazo', backText: '',
+      })],
+      ['uuid-de-la-version-anterior', new FlashCard({
+        id: 'uuid-de-la-version-anterior', collectionId: 'anki-deck-10',
+        frontText: 'Nueva pregunta', backText: 'Nueva respuesta',
+        eloDifficulty: 1555, schedulerData: { repetitions: 2 },
+      })],
+    ])
+    const collectionRepository = {
+      findById: id => collections.get(id) ?? null,
+      findChildren: id => [...collections.values()].filter(c => c.parentId === id),
+      save: collection => collections.set(collection.id, collection),
+      delete: id => collections.delete(id),
+    }
+    const flashCardRepository = {
+      findById: id => cards.get(id) ?? null,
+      findByCollection: id => [...cards.values()].filter(card => card.collectionId === id),
+      save: card => cards.set(card.id, card),
+      delete: id => cards.delete(id),
+    }
+    const importer = new AnkiImporter({
+      db: {}, collectionRepository, flashCardRepository,
+      userProfileRepository: {}, studySessionService: {},
+    })
+
+    const incoming = [['10', { name: '6.º Primaria' }]]
+    const deckCards = new Map([['10', [
+      {
+        id: 'anki-card-42', frontText: 'Enunciado corregido', backText: 'Respuesta corregida',
+        cardType: 'basic', extraData: {}, tags: ['matematicas', 'elo:1300'],
+        eloDifficulty: 1300, isUnlocked: true, schedulerData: {}, prerequisites: [],
+      },
+      {
+        id: 'anki-card-43', frontText: 'Nueva pregunta', backText: 'Nueva respuesta',
+        cardType: 'basic', extraData: {}, tags: ['matematicas'],
+        eloDifficulty: 1300, isUnlocked: true, schedulerData: {}, prerequisites: [],
+      },
+      {
+        id: 'anki-card-44', frontText: 'Tarjeta totalmente nueva', backText: 'Respuesta nueva',
+        cardType: 'basic', extraData: {}, tags: ['matematicas'],
+        eloDifficulty: 1300, isUnlocked: true, schedulerData: {}, prerequisites: [],
+      },
+    ]]])
+
+    expect(importer._syncDecks(incoming, deckCards, { 10: 'anki-deck-10' })).toBe(3)
+
+    const updated = cards.get('anki-card-42')
+    expect(updated.frontText).toBe('Enunciado corregido')
+    expect(updated.backText).toBe('Respuesta corregida')
+    expect(updated.tags).toEqual(['matematicas', 'elo:1300'])
+    expect(updated.eloDifficulty).toBe(1680)
+    expect(updated.schedulerData).toEqual({ repetitions: 4, nextReview: '2026-10-01T09:00:00.000Z' })
+    expect(updated.isUnlocked).toBe(false)
+    expect(updated.muted).toBe(true)
+    expect(updated.createdAt).toBe('2026-01-02T00:00:00.000Z')
+
+    // Migra sin pérdida una tarjeta importada por una versión anterior que
+    // todavía tenía UUID aleatorio, siempre que su contenido no haya cambiado.
+    expect(cards.has('uuid-de-la-version-anterior')).toBe(false)
+    expect(cards.get('anki-card-43').eloDifficulty).toBe(1555)
+    expect(cards.get('anki-card-43').schedulerData).toEqual({ repetitions: 2 })
+    expect(cards.get('anki-card-44').eloDifficulty).toBe(1300)
+    expect(cards.has('anki-card-99')).toBe(false)
+    expect(cards.has('anki-card-100')).toBe(false)
+    expect(collections.has('anki-deck-11')).toBe(false)
+    expect(collections.get('anki-deck-10').name).toBe('6.º Primaria')
   })
 })
 

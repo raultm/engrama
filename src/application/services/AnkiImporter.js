@@ -2,7 +2,6 @@ import JSZip from 'jszip'
 import { decompress as zstdDecompress } from 'fzstd'
 import { FlashCard } from '../../domain/entities/FlashCard.js'
 import { ImageStore } from '../../infrastructure/db/ImageStore.js'
-import { generateId } from '../../infrastructure/utils/generateId.js'
 import { parseSgf } from '../../domain/sgf/SgfParser.js'
 
 async function getSqlJs() {
@@ -86,21 +85,22 @@ export class AnkiImporter {
       throw new Error('No se pudieron leer los tipos de nota del archivo. El formato puede no ser compatible.')
     }
 
-    const notesRows = (ankiDb.exec('SELECT id, mid, flds, tags FROM notes')[0]?.values) ?? []
-    const cardsRows = (ankiDb.exec('SELECT nid, did, ord FROM cards')[0]?.values) ?? []
+    const notesRows = (ankiDb.exec('SELECT id, mid, flds, tags, data FROM notes')[0]?.values) ?? []
+    const cardsRows = (ankiDb.exec('SELECT id, nid, did, ord FROM cards')[0]?.values) ?? []
     ankiDb.close()
 
-    // note id (string) → [{did: string, ord: number}]
+    // note id (string) → [{id, did, ord}]. El id de tarjeta de Anki se
+    // conserva para poder sincronizar posteriores exportaciones del mismo mazo.
     const noteToCards = new Map()
-    for (const [nid, did, ord] of cardsRows) {
+    for (const [cardId, nid, did, ord] of cardsRows) {
       const key = String(nid)
       if (!noteToCards.has(key)) noteToCards.set(key, [])
-      noteToCards.get(key).push({ did: String(did), ord })
+      noteToCards.get(key).push({ id: String(cardId), did: String(did), ord })
     }
 
     // Convert notes to our card format grouped by deck id
     const deckCards = new Map() // deckId(string) → FlashCard[]
-    for (const [noteId, mid, flds, tags] of notesRows) {
+    for (const [noteId, mid, flds, tags, data] of notesRows) {
       const model = models[String(mid)]
       if (!model) continue
 
@@ -109,18 +109,20 @@ export class AnkiImporter {
       model.flds.forEach((f, i) => { fieldMap[f.name] = fields[i] ?? '' })
 
       const noteTags = (tags ?? '').trim().split(/\s+/).filter(Boolean)
+      const noteElo = _eloFromNoteData(data)
+      const conversionTags = noteElo == null ? noteTags : [...noteTags, `elo:${noteElo}`]
       const cardList = noteToCards.get(String(noteId)) ?? []
 
       let converted = []
       try {
-        converted = await this._convertNote(String(noteId), model, fieldMap, noteTags, cardList, mediaCache)
+        converted = await this._convertNote(String(noteId), model, fieldMap, conversionTags, cardList, mediaCache)
       } catch (err) {
         console.warn(`[AnkiImporter] note ${noteId} skipped:`, err.message)
       }
 
       for (const { deckId, cardData } of converted) {
         if (!deckCards.has(deckId)) deckCards.set(deckId, [])
-        deckCards.get(deckId).push(cardData)
+        deckCards.get(deckId).push({ ...cardData, tags: noteTags })
       }
     }
 
@@ -142,41 +144,11 @@ export class AnkiImporter {
       deckToColId[deckId] = `anki-deck-${deckId}`
     }
 
-    // Persist
-    this._db.clearAllData()
-    await ImageStore.clear()
+    // Sync: el .apkg es la fuente de los contenidos, pero no del progreso.
+    // Los IDs nativos de Anki permiten actualizar una tarjeta sin perder su
+    // planificación SM-2, ELO, estado de desbloqueo o silenciado.
     this._profileRepo.getOrCreate()
-
-    const now = new Date().toISOString()
-    let totalCards = 0
-
-    for (const [deckId, deck] of finalDecks) {
-      const colId = deckToColId[deckId]
-      const nameParts = deck.name.split('::')
-      const shortName = nameParts[nameParts.length - 1]
-
-      // Find parent collection id
-      let parentId = null
-      if (nameParts.length > 1) {
-        const parentName = nameParts.slice(0, -1).join('::')
-        const parentEntry = finalDecks.find(([, d]) => d.name === parentName)
-        if (parentEntry) parentId = deckToColId[parentEntry[0]]
-      }
-
-      this._db.run(
-        `INSERT OR REPLACE INTO collections
-         (id, parent_id, name, description, scheduler_type, created_at, updated_at)
-         VALUES (?, ?, ?, '', 'sm2', ?, ?)`,
-        [colId, parentId, shortName, now, now]
-      )
-
-      const cards = deckCards.get(deckId) ?? []
-      for (const cardData of cards) {
-        const card = new FlashCard({ ...cardData, collectionId: colId, id: generateId() })
-        this._cardRepo.save(card)
-        totalCards++
-      }
-    }
+    const totalCards = this._syncDecks(finalDecks, deckCards, deckToColId)
 
     // Store images in IndexedDB (after DB is persisted to avoid size issues)
     for (const [filename, dataUrl] of Object.entries(mediaCache)) {
@@ -185,6 +157,101 @@ export class AnkiImporter {
 
     this._db.markSeeded()
     return { deckCount: finalDecks.length, cardCount: totalCards }
+  }
+
+  /**
+   * Sincroniza los mazos incluidos en el .apkg.
+   *
+   * Una tarjeta existente conserva los campos que pertenecen al estudio de la
+   * persona (ELO, scheduler, bloqueo y silenciado); el paquete actualiza el
+   * contenido que pertenece al autor del mazo. Los mazos hijos que ya no
+   * existen y las tarjetas eliminadas se retiran dentro de cada raíz importada.
+   */
+  _syncDecks(finalDecks, deckCards, deckToColId) {
+    const now = new Date().toISOString()
+    const incomingCollectionIds = new Set(finalDecks.map(([deckId]) => deckToColId[deckId]))
+    const incomingCardIds = new Set(
+      [...deckCards.values()].flatMap(cards => cards.map(card => card.id))
+    )
+
+    // Solo se limpian las raíces incluidas en esta importación. Otros mazos
+    // que pueda tener el mismo Engrama no se ven afectados.
+    const rootDeckIds = finalDecks
+      .filter(([, deck]) => !deck.name.includes('::'))
+      .map(([deckId]) => deckToColId[deckId])
+    const existingCollectionIds = new Set()
+    for (const rootId of rootDeckIds) {
+      if (this._collectionRepo.findById(rootId)) {
+        this._collectCollectionIds(rootId, existingCollectionIds)
+      }
+    }
+
+    // Crear o actualizar la jerarquía antes de mover/guardar tarjetas.
+    for (const [deckId, deck] of finalDecks) {
+      const colId = deckToColId[deckId]
+      const nameParts = deck.name.split('::')
+      const shortName = nameParts[nameParts.length - 1]
+      const parentName = nameParts.slice(0, -1).join('::')
+      const parentEntry = parentName
+        ? finalDecks.find(([, candidate]) => candidate.name === parentName)
+        : null
+      const existing = this._collectionRepo.findById(colId)
+
+      this._collectionRepo.save({
+        id: colId,
+        parentId: parentEntry ? deckToColId[parentEntry[0]] : null,
+        name: shortName,
+        description: '',
+        schedulerType: 'sm2',
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      })
+    }
+
+    let totalCards = 0
+    for (const [deckId] of finalDecks) {
+      const collectionId = deckToColId[deckId]
+      for (const cardData of deckCards.get(deckId) ?? []) {
+        const incoming = new FlashCard({ ...cardData, collectionId })
+        const existing = this._cardRepo.findById(incoming.id)
+          ?? this._findLegacyCard(collectionId, incoming)
+        this._cardRepo.save(existing ? _mergeImportedCard(existing, incoming) : incoming)
+        totalCards++
+      }
+    }
+
+    // Las tarjetas que ya no vienen en el .apkg se eliminan, pero una tarjeta
+    // movida entre submazos conserva su ID y no se toca aquí.
+    for (const collectionId of existingCollectionIds) {
+      for (const card of this._cardRepo.findByCollection(collectionId)) {
+        if (!incomingCardIds.has(card.id)) this._cardRepo.delete(card.id)
+      }
+    }
+
+    // Borrar primero las hojas evita dejar colecciones huérfanas.
+    for (const collectionId of [...existingCollectionIds].reverse()) {
+      if (!incomingCollectionIds.has(collectionId)) this._collectionRepo.delete(collectionId)
+    }
+
+    return totalCards
+  }
+
+  _collectCollectionIds(collectionId, ids) {
+    if (ids.has(collectionId)) return
+    ids.add(collectionId)
+    for (const child of this._collectionRepo.findChildren(collectionId)) {
+      this._collectCollectionIds(child.id, ids)
+    }
+  }
+
+  // Las versiones anteriores del importador usaban UUIDs aleatorios. En la
+  // primera importación con sincronización intentamos migrar esas tarjetas si
+  // su contenido sigue siendo idéntico. A partir de ahí se usa el ID de Anki.
+  _findLegacyCard(collectionId, incoming) {
+    const matches = this._cardRepo.findByCollection(collectionId).filter(card =>
+      !card.id.startsWith('anki-card-') && _sameImportedContent(card, incoming)
+    )
+    return matches.length === 1 ? matches[0] : null
   }
 
   // ── Note conversion ────────────────────────────────────────────────────────
@@ -211,15 +278,16 @@ export class AnkiImporter {
     const f1 = _processField(fieldMap[fieldNames[1]] ?? '', mediaCache) || '(sin texto)'
     const now = new Date().toISOString()
 
-    return cardList.map(({ did, ord }) => ({
+    return cardList.map(({ id, did, ord }) => ({
       deckId: did,
       cardData: {
+        id: _toEngramaCardId(id),
         frontText: ord === 0 ? f0 : f1,
         backText:  ord === 0 ? f1 : f0,
         cardType:  'basic',
         extraData: {},
         tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
-        schedulerData: {}, prerequisites: [], isUnlocked: true,
+        schedulerData: {}, prerequisites: [], isUnlocked: _isUnlockedFromTags(tags),
       },
     }))
   }
@@ -229,15 +297,16 @@ export class AnkiImporter {
     const cleanText = _stripHtmlKeepCloze(textField)
     const now = new Date().toISOString()
 
-    return cardList.map(({ did, ord }) => ({
+    return cardList.map(({ id, did, ord }) => ({
       deckId: did,
       cardData: {
+        id: _toEngramaCardId(id),
         frontText: cleanText,
         backText:  '',
         cardType:  'cloze',
         extraData: { clozeIndex: ord + 1 },
         tags, eloDifficulty: _eloFromTags(tags), createdAt: now, updatedAt: now,
-        schedulerData: {}, prerequisites: [], isUnlocked: true,
+        schedulerData: {}, prerequisites: [], isUnlocked: _isUnlockedFromTags(tags),
       },
     }))
   }
@@ -251,9 +320,10 @@ export class AnkiImporter {
     const parsed = parseSgf(sgfText)
     const now    = new Date().toISOString()
 
-    return cardList.map(({ did, ord }) => ({
+    return cardList.map(({ id, did, ord }) => ({
       deckId: did,
       cardData: {
+        id: _toEngramaCardId(id),
         frontText:    nombre || parsed.comment || `Problema ${ord + 1}`,
         backText:     parsed.correctMoves[0] ?? '',
         cardType:     'tsumego',
@@ -294,13 +364,14 @@ export class AnkiImporter {
     const header    = _stripHtml(fieldMap['Encabezado'] ?? fieldMap['Header'] ?? '')
     const backExtra = _stripHtml(fieldMap['Reverso Extra'] ?? fieldMap['Back Extra'] ?? fieldMap['Remarks'] ?? '')
 
-    return cardList.map(({ did, ord }) => {
+    return cardList.map(({ id, did, ord }) => {
       const activeMask   = masks.find(m => m.id === String(ord)) ?? masks[ord] ?? null
       const activeMaskId = activeMask?.id ?? String(ord)
       const label        = activeMask?.label || backExtra || ''
       return {
         deckId: did,
         cardData: {
+          id: _toEngramaCardId(id),
           frontText: header || '',
           backText:  label,
           cardType:  'image_occlusion',
@@ -389,7 +460,15 @@ function _readSchema(ankiDb) {
 }
 
 // ── Exports para tests ─────────────────────────────────────────────────────
-export { _parseNewIOField, _parseMediaProto, _eloFromTags, _isUnlockedFromTags }
+export {
+  _parseNewIOField,
+  _parseMediaProto,
+  _eloFromTags,
+  _isUnlockedFromTags,
+  _eloFromNoteData,
+  _toEngramaCardId,
+  _mergeImportedCard,
+}
 
 // ── Parsers para formatos Anki 24.x ────────────────────────────────────────
 
@@ -492,6 +571,43 @@ function _parseMediaProto(bytes) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+// Anki mantiene el ID de cada card al editar y volver a exportar un mazo. Es
+// el vínculo estable entre el contenido del autor y el progreso en Engrama.
+function _toEngramaCardId(ankiCardId) {
+  if (!ankiCardId) throw new Error('La tarjeta de Anki no tiene identificador.')
+  return `anki-card-${ankiCardId}`
+}
+
+function _mergeImportedCard(existing, incoming) {
+  return existing.update({
+    id: incoming.id,
+    collectionId: incoming.collectionId,
+    frontText: incoming.frontText,
+    backText: incoming.backText,
+    cardType: incoming.cardType,
+    extraData: incoming.extraData,
+    tags: incoming.tags,
+    // ELO, schedulerData, isUnlocked y muted son datos de estudio: se
+    // conservan aunque el autor modifique la tarjeta en Anki.
+  })
+}
+
+function _sameImportedContent(existing, incoming) {
+  return existing.frontText === incoming.frontText
+    && existing.backText === incoming.backText
+    && existing.cardType === incoming.cardType
+    && JSON.stringify(existing.extraData) === JSON.stringify(incoming.extraData)
+}
+
+function _eloFromNoteData(data) {
+  try {
+    const elo = JSON.parse(data)?.engrama?.elo
+    return Number.isInteger(elo) && elo >= 100 && elo <= 3000 ? elo : null
+  } catch {
+    return null
+  }
+}
 
 
 function _eloFromTags(tags) {
